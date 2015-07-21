@@ -5,18 +5,17 @@ package main
 
 import (
 	"crypto/tls"
-
-	"../../remoton"
 	"crypto/x509"
+	"flag"
+	"io/ioutil"
+	"unsafe"
+
+	"github.com/bit4bit/remoton"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
-	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
-	"unsafe"
 )
 
 var (
@@ -26,15 +25,22 @@ var (
 	tunnelSrv = &tunnelRemoton{}
 )
 
+var (
+	certFile = flag.String("cert", "cert.pem", "cert pem")
+)
+
 func main() {
-	roots := x509.NewCertPool()
-	dirApp, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		panic(err)
+	flag.Parse()
+	if *certFile == "" {
+		log.Error("need cert file and key file .pem")
+		return
 	}
-	rootPEM, err := ioutil.ReadFile(path.Join(dirApp, "cert.pem"))
+
+	roots := x509.NewCertPool()
+
+	rootPEM, err := ioutil.ReadFile(*certFile)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
 	if !ok {

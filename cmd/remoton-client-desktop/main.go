@@ -3,11 +3,10 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"path"
-	"path/filepath"
 	"syscall"
 	"unsafe"
 
@@ -23,15 +22,20 @@ var (
 	clremoton *clientRemoton
 )
 
+var (
+	certFile = flag.String("cert", "cert.pem", "cert pem")
+)
+
 func main() {
-	roots := x509.NewCertPool()
-	dirApp, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		panic(err)
+	flag.Parse()
+	if *certFile == "" {
+		log.Error("need cert file and key file .pem")
+		return
 	}
-	rootPEM, err := ioutil.ReadFile(path.Join(dirApp, "cert.pem"))
+	roots := x509.NewCertPool()
+	rootPEM, err := ioutil.ReadFile(*certFile)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
 	if !ok {

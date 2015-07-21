@@ -1,8 +1,9 @@
 package main
 
 import (
-	"../../remoton"
-	"../../xpra"
+	"github.com/bit4bit/remoton"
+	"github.com/bit4bit/remoton/xpra"
+
 	log "github.com/Sirupsen/logrus"
 	"io"
 	"net"
