@@ -2,20 +2,21 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"syscall"
+	"unsafe"
 
-	"../../remoton"
-	"crypto/x509"
+	"github.com/bit4bit/remoton"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
-	"io/ioutil"
-	"path"
-	"path/filepath"
-	"unsafe"
 )
 
 var (

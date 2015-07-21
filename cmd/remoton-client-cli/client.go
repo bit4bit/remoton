@@ -1,13 +1,14 @@
 package main
 
 import (
-	"../../remoton"
 	"crypto/tls"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"io"
 	"net"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/bit4bit/remoton"
 )
 
 type Session struct {

@@ -1,13 +1,14 @@
 package main
 
 import (
-	"../../remoton"
-	"../../xpra"
-	log "github.com/Sirupsen/logrus"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/bit4bit/remoton"
+	"github.com/bit4bit/remoton/xpra"
 )
 
 //chatRemoton handle remote chat

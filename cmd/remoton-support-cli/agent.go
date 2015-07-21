@@ -1,15 +1,16 @@
 package main
 
 import (
-	"../../remoton"
 	"bufio"
 	"crypto/tls"
 	"flag"
-	log "github.com/Sirupsen/logrus"
 	"io"
 	"net"
 	"os"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/bit4bit/remoton"
 )
 
 var (

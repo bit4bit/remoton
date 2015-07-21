@@ -1,16 +1,17 @@
 package main
 
 import (
-	"../../remoton"
-	"code.google.com/p/go-uuid/uuid"
-
 	"flag"
-	"github.com/PuerkitoBio/throttled"
-	"github.com/PuerkitoBio/throttled/store"
-	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"os"
 	"runtime/pprof"
+
+	"github.com/bit4bit/remoton"
+
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/PuerkitoBio/throttled"
+	"github.com/PuerkitoBio/throttled/store"
+	log "github.com/Sirupsen/logrus"
 )
 
 var (
