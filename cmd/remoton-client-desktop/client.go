@@ -2,10 +2,10 @@ package main
 
 import (
 	"crypto/x509"
+	"io"
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
@@ -132,16 +132,15 @@ func (c *vncRemoton) handleTunnel(local net.Conn, remote net.Conn) {
 	log.Println("vncRemoton.handleTunnel")
 	errc := make(chan error, 2)
 	go func() {
-		_, err := remoton.NetCopy(local, remote, time.Second*5)
+		_, err := io.Copy(local, remote)
 		errc <- err
 	}()
 	go func() {
-		_, err := remoton.NetCopy(remote, local, time.Second*5)
+		_, err := io.Copy(remote, local)
 		errc <- err
 	}()
 
-	<-errc
-	log.Println("vncRemoton: closing connections")
+	log.Println("vncRemoton: closing connections", <-errc)
 }
 
 func (c *vncRemoton) findFreePort() (string, int) {

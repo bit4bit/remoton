@@ -18,6 +18,7 @@ var (
 	tunnelAddr = flag.String("tunnel", "localhost:9959", "tunnel addres")
 	service    = flag.String("service", "nx", "service")
 	auth       = flag.String("auth", "", "auth session:user:pass")
+	chat       = flag.Bool("chat", false, "dial to chat service")
 
 	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{
 		InsecureSkipVerify: true,
@@ -39,12 +40,14 @@ func main() {
 		ID: sessionID, AuthToken: sessionAuth,
 		APIURL: "https://" + *srv}
 
-	wsconnChat, err := session.Dial("chat")
-	if err != nil {
-		log.Fatal(err)
+	if *chat {
+		wsconnChat, err := session.Dial("chat")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer wsconnChat.Close()
+		go chatStd(wsconnChat)
 	}
-	defer wsconnChat.Close()
-	go chatStd(wsconnChat)
 
 	log.Println("connected vnc")
 	listen, err := net.Listen("tcp", *tunnelAddr)

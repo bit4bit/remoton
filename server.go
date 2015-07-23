@@ -150,7 +150,8 @@ func wsCopy(src io.ReadWriteCloser) websocket.Server {
 
 	handler := websocket.Handler(func(ws *websocket.Conn) {
 		ws.PayloadType = websocket.BinaryFrame
-		<-connTunnel(src, ws)
+		err := <-connTunnel(src, ws)
+		log.Error("wsCopy:", err)
 		ws.Close()
 		src.Close()
 	})

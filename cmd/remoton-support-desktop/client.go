@@ -9,7 +9,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type chatRemoton struct {
@@ -45,7 +44,7 @@ func (c *chatRemoton) handle() {
 			log.Error(err)
 			break
 		}
-		print(buf)
+
 		if c.onRecv != nil {
 			c.onRecv(strings.TrimSpace(string(buf[0:rlen])))
 		}
@@ -80,31 +79,33 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
 	if err != nil {
 		return err
 	}
+	c.listener = listener
 
-	remote, err := session.Dial("nx")
-	if err != nil {
-		listener.Close()
-		return err
-	}
+	go func(listener net.Listener) {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				listener.Close()
+				log.Error(err)
+				break
+			}
+			remote, err := session.Dial("nx")
+			if err != nil {
+				log.Error(err)
+				listener.Close()
 
-	chConn := make(chan net.Conn)
-	errc := make(chan error)
-	go func() {
-		conn, err := listener.Accept()
-		if err != nil {
-			listener.Close()
-			errc <- err
+				break
+			}
+			log.Println("new connection")
+			go c.handle(conn, remote)
 		}
-		chConn <- conn
-	}()
+	}(listener)
 
 	err = xpra.Attach(addrSrv)
 	if err != nil {
 		listener.Close()
 		return err
 	}
-	c.listener = listener
-	go c.handle(<-chConn, remote)
 	return nil
 }
 
@@ -117,11 +118,13 @@ func (c *tunnelRemoton) handle(local, remoto net.Conn) {
 		errc <- err
 	}()
 	go func() {
-		_, err := remoton.NetCopy(remoto, local, time.Second*5)
+		_, err := io.Copy(remoto, local)
 		errc <- err
 	}()
 
 	log.Error(<-errc)
+	local.Close()
+	remoto.Close()
 }
 
 func (c *tunnelRemoton) findFreePort() string {

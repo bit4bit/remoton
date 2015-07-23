@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
 	"net"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
@@ -25,9 +27,10 @@ func (c Session) String() string {
 var (
 	srv        = flag.String("srv", "localhost:9934", "server address")
 	service    = flag.String("service", "chat", "service chat")
-	tunnelAddr = flag.String("tunnel", "localhost:9990", "tunnel port")
+	tunnelAddr = flag.String("tunnel", "localhost:5900", "tunnel address")
 	authToken  = flag.String("auth", "", "auth token")
 	srvPrefix  = flag.String("srv-prefix", "/remoton", "base app default remoton")
+	chat       = flag.Bool("chat", false, "dial to chat service")
 )
 
 func main() {
@@ -48,39 +51,81 @@ func main() {
 	log.Printf("Session -> %s:%s", session.ID, session.AuthToken)
 	defer session.Destroy()
 
-	wsconn, err := session.Dial(*service)
-	if err != nil {
-		log.Fatal(err)
+	if *chat {
+		log.Println("Enable terminal chat")
+		lChat := session.Listen("chat")
+
+		go func(listener net.Listener) {
+			for {
+				wsconn, err := listener.Accept()
+				if err != nil {
+					log.Error("chat:", err)
+					break
+				}
+				go chatStd(wsconn)
+			}
+		}(lChat)
+
 	}
 
-	listen, err := net.Listen("tcp", *tunnelAddr)
+	listener := session.Listen(*service)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for {
-		log.Println("listen at ", *tunnelAddr)
-		conn, err := listen.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		errc := make(chan error, 2)
-		cp := func(dst net.Conn, src net.Conn) {
-			_, err := io.Copy(dst, src)
-			errc <- err
-		}
-
-		go cp(conn, wsconn)
-		go cp(wsconn, conn)
-
-		log.Error(<-errc)
-		conn.Close()
-		wsconn.Close()
-		wsconn, err = session.Dial(*service)
+		wsconn, err := listener.Accept()
 		if err != nil {
 			log.Error(err)
-			return
+			break
 		}
+
+		go func(wsconn net.Conn) {
+			conn, err := net.Dial("tcp", *tunnelAddr)
+			if err != nil {
+				listener.Close()
+				log.Error(err)
+				return
+			}
+
+			errc := make(chan error, 2)
+			cp := func(dst net.Conn, src net.Conn) {
+				_, err := io.Copy(dst, src)
+				errc <- err
+			}
+
+			go cp(conn, wsconn)
+			go cp(wsconn, conn)
+
+			log.Error(<-errc)
+			conn.Close()
+			wsconn.Close()
+		}(wsconn)
 	}
+}
+
+func chatStd(conn net.Conn) {
+	input := bufio.NewReader(os.Stdin)
+	output := bufio.NewWriter(conn)
+
+	go func() {
+		for {
+			buf := make([]byte, 32*512)
+			_, err := conn.Read(buf)
+			if err != nil {
+				break
+			}
+			os.Stderr.WriteString("remote chat <- " + string(buf) + "\n")
+		}
+	}()
+	for {
+		msg, err := input.ReadString('\n')
+		if err != nil {
+			log.Error(err)
+			break
+		}
+		output.WriteString(msg)
+		output.Flush()
+	}
+
 }
