@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/x509"
 	"net"
 	"strconv"
 	"strings"
@@ -164,14 +165,14 @@ func (c *vncRemoton) Stop() {
 }
 
 type clientRemoton struct {
-	client  remoton.Client
+	client  *remoton.Client
 	Chat    *chatRemoton
 	VNC     *vncRemoton
 	session *remoton.SessionClient
 	started bool
 }
 
-func newClient(rclient remoton.Client) *clientRemoton {
+func newClient(rclient *remoton.Client) *clientRemoton {
 
 	return &clientRemoton{client: rclient,
 		Chat:    newChatRemoton(),
@@ -181,6 +182,10 @@ func newClient(rclient remoton.Client) *clientRemoton {
 
 func (c *clientRemoton) Started() bool {
 	return c.started
+}
+
+func (c *clientRemoton) SetCertPool(roots *x509.CertPool) {
+	c.client.TLSConfig.RootCAs = roots
 }
 
 func (c *clientRemoton) Start(srvAddr string, authToken string) (err error) {

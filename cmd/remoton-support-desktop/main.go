@@ -5,12 +5,10 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"flag"
-	"io/ioutil"
 	"unsafe"
 
 	"github.com/bit4bit/remoton"
+	"github.com/bit4bit/remoton/common"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mattn/go-gtk/gdk"
@@ -19,37 +17,13 @@ import (
 )
 
 var (
-	rclient *remoton.Client
-
+	rclient   *remoton.Client
 	chatSrv   = &chatRemoton{}
 	tunnelSrv = &tunnelRemoton{}
 )
 
-var (
-	certFile = flag.String("cert", "cert.pem", "cert pem")
-)
-
 func main() {
-	flag.Parse()
-	if *certFile == "" {
-		log.Error("need cert file and key file .pem")
-		return
-	}
-
-	roots := x509.NewCertPool()
-
-	rootPEM, err := ioutil.ReadFile(*certFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
-	if !ok {
-		panic("failed to parse root certificate")
-	}
-
-	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{
-		InsecureSkipVerify: true,
-	}}
+	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}}
 
 	gtk.Init(nil)
 
@@ -118,9 +92,18 @@ func main() {
 	serverEntry.SetText("localhost:9934")
 	controlBox.Add(serverEntry)
 
+	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
+	controlBox.Add(btnCert)
 	btn := gtk.NewButtonWithLabel("Connect")
 	started := false
 	btn.Clicked(func() {
+		certPool, err := common.GetRootCAFromFile(btnCert.GetFilename())
+		if err != nil {
+			dialogError(window, err)
+			return
+		}
+		rclient.TLSConfig.RootCAs = certPool
+
 		session := &remoton.SessionClient{Client: rclient,
 			ID: machineIDEntry.GetText(), AuthToken: machineAuthEntry.GetText(),
 			APIURL: "https://" + serverEntry.GetText()}
