@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net/http"
 	"os"
+	"runtime"
 	"runtime/pprof"
 
 	"github.com/bit4bit/remoton"
@@ -23,6 +24,8 @@ var (
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	flag.Parse()
 
 	if *profile != "" {
