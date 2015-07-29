@@ -1,5 +1,6 @@
 /*xpra interface to command xpra
  */
+// +build linux
 package xpra
 
 import (
@@ -45,7 +46,7 @@ func Attach(addr string) error {
 		return err
 	}
 
-	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr)
+	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr, "-z9")
 
 	if err := xpraCmd.Start(); err != nil {
 		log.Error("xpra_attach:", err)

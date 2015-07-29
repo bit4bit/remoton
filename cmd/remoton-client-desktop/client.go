@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
@@ -97,7 +98,7 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 		return err
 	}
 
-	conn, err := net.Dial("tcp", addrSrv)
+	conn, err := net.DialTimeout("tcp", addrSrv, time.Second*3)
 	if err != nil {
 		xpra.Terminate()
 		return err
