@@ -5,6 +5,7 @@ package main
 
 import (
 	"crypto/tls"
+	"runtime"
 	"unsafe"
 
 	"github.com/bit4bit/remoton"
@@ -23,6 +24,8 @@ var (
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}}
 
 	gtk.Init(nil)
