@@ -13,6 +13,8 @@ import (
 	"github.com/bit4bit/remoton/xpra"
 )
 
+type callbackNewConnection func(net.Addr)
+
 //chatRemoton handle remote chat
 type chatRemoton struct {
 	cbSend map[net.Conn]func(string)
@@ -85,7 +87,12 @@ func (c *chatRemoton) Stop() {
 }
 
 type vncRemoton struct {
-	conn net.Conn
+	conn         net.Conn
+	onConnection func(net.Addr)
+}
+
+func newVncRemoton() *vncRemoton {
+	return &vncRemoton{}
 }
 
 func (c *vncRemoton) Start(session *remoton.SessionClient) error {
@@ -117,6 +124,10 @@ func (c *vncRemoton) start(session *remoton.SessionClient, addrSrv string) {
 		if err != nil {
 			log.Error(err)
 			break
+		}
+
+		if c.onConnection != nil {
+			c.onConnection(wsconn.RemoteAddr())
 		}
 
 		conn, err := net.Dial("tcp", addrSrv)
@@ -157,10 +168,15 @@ func (c *vncRemoton) findFreePort() (string, int) {
 	return "", -1
 }
 
+func (c *vncRemoton) OnConnection(cb func(addr net.Addr)) {
+	c.onConnection = cb
+}
+
 func (c *vncRemoton) Stop() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
+
 	xpra.Terminate()
 }
 
@@ -176,7 +192,7 @@ func newClient(rclient *remoton.Client) *clientRemoton {
 
 	return &clientRemoton{client: rclient,
 		Chat:    newChatRemoton(),
-		VNC:     &vncRemoton{},
+		VNC:     newVncRemoton(),
 		started: false}
 }
 
@@ -188,7 +204,8 @@ func (c *clientRemoton) SetCertPool(roots *x509.CertPool) {
 	c.client.TLSConfig.RootCAs = roots
 }
 
-func (c *clientRemoton) Start(srvAddr string, authToken string) (err error) {
+func (c *clientRemoton) Start(srvAddr string, authToken string) error {
+	var err error
 	c.session, err = c.client.NewSession("https://"+srvAddr, authToken)
 	if err != nil {
 		return err

@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/tls"
+	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"unsafe"
 
@@ -21,6 +23,7 @@ var (
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	clremoton = newClient(&remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}})
 	sigs := make(chan os.Signal, 1)
@@ -44,6 +47,7 @@ func main() {
 	hpaned := gtk.NewHPaned()
 	appLayout.Add(hpaned)
 	statusbar := gtk.NewStatusbar()
+	context_id := statusbar.GetContextId("remoton-desktop-client")
 
 	//---
 	//CONTROL
@@ -73,9 +77,11 @@ func main() {
 
 	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
 	btnSrv := gtk.NewButtonWithLabel("Start")
+	clremoton.VNC.OnConnection(func(addr net.Addr) {
+		statusbar.Push(context_id, "Someone connected")
+		log.Println("New connection from:" + addr.String())
+	})
 	btnSrv.Clicked(func() {
-		context_id := statusbar.GetContextId("remoton-desktop-client")
-
 		certPool, err := common.GetRootCAFromFile(btnCert.GetFilename())
 		if err != nil {
 			dialogError(window, err)
@@ -85,8 +91,8 @@ func main() {
 
 		if !clremoton.Started() {
 			log.Println("starting remoton")
-			err := clremoton.Start(serverEntry.GetText(),
-				authServerEntry.GetText())
+			err := clremoton.Start(serverEntry.GetText(), authServerEntry.GetText())
+
 			if err != nil {
 				dialogError(btnSrv.GetTopLevelAsWindow(), err)
 				statusbar.Push(context_id, "Failed")
