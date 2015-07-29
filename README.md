@@ -2,7 +2,7 @@
 
 **DEV STAGE**
 
-(Go) Own remote desktop platform
+(Go) Own remote desktop multi-platform
 
 Commands
   * `remoton-server-cert` generate certificates for secure connections
