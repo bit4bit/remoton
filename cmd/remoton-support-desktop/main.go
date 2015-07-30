@@ -7,7 +7,10 @@ import (
 	"crypto/tls"
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"unsafe"
 
 	log "github.com/Sirupsen/logrus"
@@ -28,6 +31,13 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}}
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGABRT, syscall.SIGKILL, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		chatSrv.Terminate()
+		tunnelSrv.Terminate()
+	}()
 	gtk.Init(nil)
 
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
@@ -35,6 +45,8 @@ func main() {
 	window.SetTitle("REMOTON SUPPORT")
 	window.Connect("destroy", func() {
 		gtk.MainQuit()
+		chatSrv.Terminate()
+		tunnelSrv.Terminate()
 	})
 	window.SetIcon(common.GetIconGdkPixbuf())
 
