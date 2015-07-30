@@ -23,6 +23,8 @@ var (
 )
 
 func main() {
+	common.SetDefaultGtkTheme()
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}}

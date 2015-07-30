@@ -24,6 +24,7 @@ var (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	common.SetDefaultGtkTheme()
 
 	clremoton = newClient(&remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}})
 	sigs := make(chan os.Signal, 1)

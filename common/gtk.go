@@ -1,6 +1,9 @@
 package common
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/gtk"
 )
@@ -35,4 +38,11 @@ func GtkAboutDialog() *gtk.AboutDialog {
 	dialog.SetCopyright("Copyright (C) 2015  Jovany Leandro Gonzalez Cardona")
 	dialog.SetWrapLicense(true)
 	return dialog
+}
+
+func SetDefaultGtkTheme() {
+	appPath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err == nil {
+		os.Setenv("GTK2_RC_FILES", filepath.Join(appPath, "theme", "gtkrc"))
+	}
 }
