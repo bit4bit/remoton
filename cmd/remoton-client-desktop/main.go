@@ -43,6 +43,23 @@ func main() {
 	}, "quit")
 
 	appLayout := gtk.NewVBox(false, 1)
+	menu := gtk.NewMenuBar()
+	appLayout.Add(menu)
+
+	cascademenu := gtk.NewMenuItemWithMnemonic("_Help")
+	menu.Append(cascademenu)
+	submenu := gtk.NewMenu()
+	cascademenu.SetSubmenu(submenu)
+
+	menuitem := gtk.NewMenuItemWithMnemonic("_About")
+	menuitem.Connect("activate", func() {
+		dialog := common.GtkAboutDialog()
+		dialog.SetProgramName("Client Desktop")
+		dialog.SetComments("Share your desktop secure")
+		dialog.Run()
+		dialog.Destroy()
+	})
+	submenu.Append(menuitem)
 
 	hpaned := gtk.NewHPaned()
 	appLayout.Add(hpaned)

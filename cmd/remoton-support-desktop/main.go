@@ -5,11 +5,10 @@ package main
 
 import (
 	"crypto/tls"
-	"runtime"
-	"unsafe"
-
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
+	"runtime"
+	"unsafe"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mattn/go-gtk/gdk"
@@ -27,7 +26,6 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	rclient = &remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}}
-
 	gtk.Init(nil)
 
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
@@ -38,6 +36,22 @@ func main() {
 	})
 
 	appLayout := gtk.NewVBox(false, 1)
+	menu := gtk.NewMenuBar()
+	appLayout.Add(menu)
+
+	cascademenu := gtk.NewMenuItemWithMnemonic("_Help")
+	menu.Append(cascademenu)
+	submenu := gtk.NewMenu()
+	cascademenu.SetSubmenu(submenu)
+
+	menuitem := gtk.NewMenuItemWithMnemonic("_About")
+	menuitem.Connect("activate", func() {
+		dialog := common.GtkAboutDialog()
+		dialog.SetProgramName("Support Desktop")
+		dialog.Run()
+		dialog.Destroy()
+	})
+	submenu.Append(menuitem)
 
 	hpaned := gtk.NewHPaned()
 	appLayout.Add(hpaned)
