@@ -37,11 +37,12 @@ func main() {
 
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	window.SetPosition(gtk.WIN_POS_CENTER)
-	window.SetTitle("REMOTON Desktop")
+	window.SetTitle("REMOTON CLIENT")
 	window.Connect("destroy", func(ctx *glib.CallbackContext) {
 		gtk.MainQuit()
 		clremoton.Terminate()
 	}, "quit")
+	window.SetIcon(common.GetIconGdkPixbuf())
 
 	appLayout := gtk.NewVBox(false, 1)
 	menu := gtk.NewMenuBar()

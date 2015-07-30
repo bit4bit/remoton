@@ -11,13 +11,9 @@ import (
 func GtkAboutDialog() *gtk.AboutDialog {
 
 	dialog := gtk.NewAboutDialog()
+	dialog.SetIcon(GetIconGdkPixbuf())
 	dialog.SetName("Remoton")
-	pixbuf, err := gdkpixbuf.NewPixbufFromXpmData((logoXpm))
-	if err != nil {
-		panic(err)
-	}
-	//pixbuf, _ := gdkpixbuf.NewPixbufFromFile("../../logo.png")
-	dialog.SetLogo(pixbuf)
+	dialog.SetLogo(GetLogoGdkPixbuf())
 	dialog.SetLicense(`
 	Own remote desktop platform
     Copyright (C) 2015  Jovany Leandro Gonzalez Cardona
@@ -45,4 +41,20 @@ func SetDefaultGtkTheme() {
 	if err == nil {
 		os.Setenv("GTK2_RC_FILES", filepath.Join(appPath, "theme", "gtkrc"))
 	}
+}
+
+func GetLogoGdkPixbuf() *gdkpixbuf.Pixbuf {
+	pixbuf, err := gdkpixbuf.NewPixbufFromXpmData((logoXpm))
+	if err != nil {
+		panic(err)
+	}
+	return pixbuf
+}
+
+func GetIconGdkPixbuf() *gdkpixbuf.Pixbuf {
+	pixbuf, err := gdkpixbuf.NewPixbufFromXpmData((iconXpm))
+	if err != nil {
+		panic(err)
+	}
+	return pixbuf
 }
