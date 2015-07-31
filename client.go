@@ -1,6 +1,7 @@
 package remoton
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -42,9 +43,46 @@ type SessionClient struct {
 	hclient *http.Client
 }
 
+//SessionListen tunnel type websocket by default
 type SessionListen struct {
 	*SessionClient
 	service string
+}
+
+func (c *SessionListen) Accept() (net.Conn, error) {
+	return c.dialWebsocket(c.service, "/listen")
+}
+
+func (c *SessionListen) AcceptTCP() (net.Conn, error) {
+	return c.dialTCP(c.service, "/listen")
+}
+
+func (c *SessionListen) Close() error {
+	c.Destroy()
+	return nil
+}
+
+func (c *SessionListen) Addr() net.Addr {
+	return nil
+}
+
+//SessionListenTCP tunnel type TCP
+type SessionListenTCP struct {
+	*SessionClient
+	service string
+}
+
+func (c *SessionListenTCP) Accept() (net.Conn, error) {
+	return c.dialTCP(c.service, "/listen")
+}
+
+func (c *SessionListenTCP) Close() error {
+	c.Destroy()
+	return nil
+}
+
+func (c *SessionListenTCP) Addr() net.Addr {
+	return nil
 }
 
 func (c *Client) Session(id string, authToken string) *SessionClient {
@@ -96,70 +134,58 @@ func (c *SessionClient) DialTCP(service string) (net.Conn, error) {
 	return c.dialTCP(service, "/dial")
 }
 
-func (c *SessionClient) Listen(service string) *SessionListen {
+func (c *SessionClient) Listen(service string) net.Listener {
 	return &SessionListen{c, service}
 }
 
-func (c *SessionListen) Accept() (net.Conn, error) {
-	return c.dialWebsocket(c.service, "/listen")
-}
-
-func (c *SessionListen) AcceptTCP() (net.Conn, error) {
-	return c.dialTCP(c.service, "/listen")
-}
-
-//NetCopy code from io.Copy but with deadline
-func NetCopy(dst net.Conn, src net.Conn, deadline time.Duration) (written int64, err error) {
-	// If the reader has a WriteTo method, use it to do the copy.
-	// Avoids an allocation and a copy.
-	if wt, ok := src.(io.WriterTo); ok {
-		return wt.WriteTo(dst)
-	}
-	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
-	if rt, ok := dst.(io.ReaderFrom); ok {
-		return rt.ReadFrom(src)
-	}
-	buf := make([]byte, 32*1024)
-	for {
-		src.SetReadDeadline(time.Now().Add(deadline))
-		nr, er := src.Read(buf)
-		if nr > 0 {
-			nw, ew := dst.Write(buf[0:nr])
-			if nw > 0 {
-				written += int64(nw)
-			}
-			if ew != nil {
-				err = ew
-				break
-			}
-			if nr != nw {
-				err = io.ErrShortWrite
-				break
-			}
-		}
-		if er == io.EOF {
-			break
-		}
-		if er != nil {
-			err = er
-			break
-		}
-	}
-	return written, err
-
-}
-
-func (c *SessionListen) Close() error {
-	c.Destroy()
-	return nil
-}
-
-func (c *SessionListen) Addr() net.Addr {
-	return nil
+func (c *SessionClient) ListenTCP(service string) net.Listener {
+	return &SessionListenTCP{c, service}
 }
 
 func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error) {
-	return nil, nil
+
+	burl, err := url.Parse(c.APIURL)
+	if err != nil {
+		return nil, err
+	}
+	burl.Path += fmt.Sprintf("%s/session/%s/conn/%s%s/tcp", c.Prefix, c.ID, service, action)
+	req, err := http.NewRequest("GET", burl.String(), nil)
+	req.Header.Set("X-Auth-Session", c.AuthToken)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := tls.Dial("tcp", burl.Host, c.TLSConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	br := bufio.NewReader(conn)
+	bw := bufio.NewWriter(conn)
+	println(burl.RequestURI())
+	bw.WriteString("GET " + burl.RequestURI() + " HTTP/1.1\r\n")
+	bw.WriteString("Host: " + burl.Host + "\r\n")
+	bw.WriteString("Connection: Upgrade\r\n")
+	header := http.Header{}
+	header.Set("X-Auth-Session", c.AuthToken)
+	err = header.Write(bw)
+	if err != nil {
+		return nil, err
+	}
+	bw.WriteString("\r\n")
+	if err = bw.Flush(); err != nil {
+		return nil, err
+	}
+
+	resp, err := http.ReadResponse(br, &http.Request{Method: "GET"})
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("sessionClient.dialTCP: http response error, ", resp.Status)
+	}
+
+	return conn, nil
 }
 
 func (c *SessionClient) dialWebsocket(service string, action string) (*websocket.Conn, error) {
@@ -255,4 +281,45 @@ func cpdeflate(dst, src io.ReadWriteCloser) {
 	r := lz4.NewReader(src)
 
 	io.Copy(dst, r)
+}
+
+//NetCopy code from io.Copy but with deadline
+func NetCopy(dst net.Conn, src net.Conn, deadline time.Duration) (written int64, err error) {
+	// If the reader has a WriteTo method, use it to do the copy.
+	// Avoids an allocation and a copy.
+	if wt, ok := src.(io.WriterTo); ok {
+		return wt.WriteTo(dst)
+	}
+	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
+	if rt, ok := dst.(io.ReaderFrom); ok {
+		return rt.ReadFrom(src)
+	}
+	buf := make([]byte, 32*1024)
+	for {
+		src.SetReadDeadline(time.Now().Add(deadline))
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if er == io.EOF {
+			break
+		}
+		if er != nil {
+			err = er
+			break
+		}
+	}
+	return written, err
+
 }

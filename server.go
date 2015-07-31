@@ -118,7 +118,12 @@ func (c *Server) hSessionDial(w http.ResponseWriter, r *http.Request, params htt
 		log.Infof("Dial Translator %s activated for service %s.",
 			params.ByName("tunnel"),
 			params.ByName("service"))
-		trans(session.DialService(kservice)).ServeHTTP(w, r)
+		tunnel := session.DialService(kservice)
+		defer tunnel.Close()
+		log.Infof("Executing translator")
+		trans(tunnel).ServeHTTP(w, r)
+		log.Info("Ending Translator")
+
 		return
 	}
 
@@ -144,7 +149,11 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 
 	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
 		log.Infof("Listener Translator %s activated.", params.ByName("tunnel"))
-		trans(<-session.ListenService(kservice)).ServeHTTP(w, r)
+		tunnel := <-session.ListenService(kservice)
+		defer tunnel.Close()
+		log.Infof("Executing translator")
+		trans(tunnel).ServeHTTP(w, r)
+		log.Info("Ending Translator")
 		return
 	}
 

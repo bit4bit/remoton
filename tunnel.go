@@ -2,6 +2,7 @@
 package remoton
 
 import (
+	"fmt"
 	"golang.org/x/net/websocket"
 	"io"
 	"net"
@@ -10,6 +11,7 @@ import (
 
 func init() {
 	RegisterTunnelType("websocket", webSocketTunnel)
+	RegisterTunnelType("tcp", tcpTunnel)
 }
 
 func webSocketTunnel(src net.Conn) http.Handler {
@@ -32,6 +34,31 @@ func webSocketTunnel(src net.Conn) http.Handler {
 	}
 
 	return ws
+}
+
+type tcpTunnelHandler struct {
+	endpoint net.Conn
+}
+
+func (c *tcpTunnelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conn, buf, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close()
+	fmt.Fprintf(buf, "HTTP/1.1 200 OK\r\n")
+	buf.WriteString("\r\n")
+	buf.Flush()
+
+	if conn == nil {
+		panic("unexpected nil conn")
+	}
+	<-pipe(c.endpoint, conn)
+}
+
+func tcpTunnel(src net.Conn) http.Handler {
+	return &tcpTunnelHandler{src}
 }
 
 func pipe(dst io.ReadWriteCloser, src io.ReadWriteCloser) chan error {
