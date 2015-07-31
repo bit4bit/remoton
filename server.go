@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/net/websocket"
-	"io"
 	"net"
 	"net/http"
 )
@@ -23,6 +21,16 @@ var (
 	chDialTunnel       = make(chan requestTunnel)
 	chDialAcceptTunnel = make(chan net.Conn)
 )
+
+var tunnelTypes map[string]func(net.Conn) http.Handler
+
+//RegisterTranslatorType for handling connections
+func RegisterTunnelType(typ string, f func(net.Conn) http.Handler) {
+	if tunnelTypes == nil {
+		tunnelTypes = make(map[string]func(net.Conn) http.Handler)
+	}
+	tunnelTypes[typ] = f
+}
 
 //Server export API for handle connections
 //this follow http.Handler can be embedded in any
@@ -44,8 +52,8 @@ func NewServer(authToken string, authGenerator func() (string, string)) *Server 
 
 	//DELETE active session this not close active connections
 	r.DELETE(BASE_API_URL+"/session/:id", r.hDestroySession)
-	r.GET(BASE_API_URL+"/session/:id/conn/:service/dial", r.hSessionDial)
-	r.GET(BASE_API_URL+"/session/:id/conn/:service/listen", r.hSessionListen)
+	r.GET(BASE_API_URL+"/session/:id/conn/:service/dial/:tunnel", r.hSessionDial)
+	r.GET(BASE_API_URL+"/session/:id/conn/:service/listen/:tunnel", r.hSessionListen)
 
 	return r
 }
@@ -94,8 +102,6 @@ func (c *Server) hDestroySession(w http.ResponseWriter, r *http.Request, params 
 }
 
 func (c *Server) hSessionDial(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	var tunnel net.Conn
-
 	session := c.sessions.Get(params.ByName("id"))
 	if session == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -108,23 +114,27 @@ func (c *Server) hSessionDial(w http.ResponseWriter, r *http.Request, params htt
 	}
 
 	kservice := params.ByName("service")
-	tunnel = session.DialService(kservice)
+	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
+		log.Infof("Dial Translator %s activated for service %s.",
+			params.ByName("tunnel"),
+			params.ByName("service"))
+		trans(session.DialService(kservice)).ServeHTTP(w, r)
+		return
+	}
 
-	log.Infof("Dial service %s for %s", kservice, params.ByName("id"))
-	wsCopy(tunnel).ServeHTTP(w, r)
-
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	var tunnel net.Conn
-
 	session := c.sessions.Get(params.ByName("id"))
 	if session == nil {
+		log.Info("Invalid session")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	if !authenticateSession(session, r) {
+		log.Info("Invalid authentication on listen")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -132,52 +142,17 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 	kservice := params.ByName("service")
 	log.Infof("Listen service %s for %s", kservice, params.ByName("id"))
 
-	tunnel = <-session.ListenService(kservice)
+	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
+		log.Infof("Listener Translator %s activated.", params.ByName("tunnel"))
+		trans(<-session.ListenService(kservice)).ServeHTTP(w, r)
+		return
+	}
 
-	wsCopy(tunnel).ServeHTTP(w, r)
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func authenticateSession(session *srvSession, r *http.Request) bool {
 	return session.ValidateAuthToken(r.Header.Get("X-Auth-Session"))
-}
-
-func wsCopy(src io.ReadWriteCloser) websocket.Server {
-
-	handshake := func(conf *websocket.Config, r *http.Request) error {
-		conf.Protocol = []string{"binary"}
-		return nil
-	}
-
-	handler := websocket.Handler(func(ws *websocket.Conn) {
-		ws.PayloadType = websocket.BinaryFrame
-		err := <-connTunnel(src, ws)
-		log.Error("wsCopy:", err)
-		ws.Close()
-		src.Close()
-	})
-
-	ws := websocket.Server{
-		Handshake: handshake,
-		Handler:   handler,
-	}
-
-	return ws
-}
-
-func connTunnel(dst io.ReadWriteCloser, src io.ReadWriteCloser) chan error {
-	errc := make(chan error, 2)
-
-	go func() {
-		_, err := io.Copy(dst, src)
-		errc <- err
-	}()
-
-	go func() {
-		_, err := io.Copy(src, dst)
-		errc <- err
-	}()
-
-	return errc
 }
 
 func hAuth(authToken string, handler httprouter.Handle) httprouter.Handle {

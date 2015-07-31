@@ -89,7 +89,11 @@ func (c *SessionClient) Destroy() {
 }
 
 func (c *SessionClient) Dial(service string) (net.Conn, error) {
-	return c.dial(service, "/dial")
+	return c.dialWebsocket(service, "/dial")
+}
+
+func (c *SessionClient) DialTCP(service string) (net.Conn, error) {
+	return c.dialTCP(service, "/dial")
 }
 
 func (c *SessionClient) Listen(service string) *SessionListen {
@@ -97,7 +101,11 @@ func (c *SessionClient) Listen(service string) *SessionListen {
 }
 
 func (c *SessionListen) Accept() (net.Conn, error) {
-	return c.dial(c.service, "/listen")
+	return c.dialWebsocket(c.service, "/listen")
+}
+
+func (c *SessionListen) AcceptTCP() (net.Conn, error) {
+	return c.dialTCP(c.service, "/listen")
 }
 
 //NetCopy code from io.Copy but with deadline
@@ -150,7 +158,11 @@ func (c *SessionListen) Addr() net.Addr {
 	return nil
 }
 
-func (c *SessionClient) dial(service string, action string) (*websocket.Conn, error) {
+func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error) {
+	return nil, nil
+}
+
+func (c *SessionClient) dialWebsocket(service string, action string) (*websocket.Conn, error) {
 	var origin string
 	var wsurl string
 
@@ -178,7 +190,7 @@ func (c *SessionClient) dial(service string, action string) (*websocket.Conn, er
 	}
 	conf.Protocol = []string{"binary"}
 	conf.Location.Path = fmt.Sprintf(
-		c.Prefix+"/session/%s/conn/%s%s", c.ID, service, action,
+		c.Prefix+"/session/%s/conn/%s%s/websocket", c.ID, service, action,
 	)
 
 	//TODO use root cert
