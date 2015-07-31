@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"runtime"
 	"time"
 )
 
@@ -102,5 +103,9 @@ func init() {
 }
 
 func pathProgramFiles() string {
-	return os.Getenv("ProgramFiles")
+	if runtime.GOARCH == "amd64" {
+		return os.Getenv("ProgramFiles(x86)")
+	} else {
+		return os.Getenv("ProgramFiles")
+	}
 }
