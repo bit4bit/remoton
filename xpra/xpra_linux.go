@@ -1,6 +1,8 @@
+// +build linux
+
 /*xpra interface to command xpra
  */
-// +build linux
+
 package xpra
 
 import (
@@ -101,8 +103,6 @@ func Bind(addr string) error {
 			return ErrClosingTCP
 		}
 	}
-
-	return nil
 }
 
 func Terminate() {

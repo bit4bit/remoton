@@ -182,7 +182,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("sessionClient.dialTCP: http response error, ", resp.Status)
+		return nil, fmt.Error("sessionClient.dialTCP: http response error, ", resp.Status)
 	}
 
 	return conn, nil
