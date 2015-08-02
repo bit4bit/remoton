@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
+	"github.com/bit4bit/remoton/common/p2p/nat"
 	"github.com/bit4bit/remoton/xpra"
 )
 
@@ -91,6 +92,7 @@ func (c *chatRemoton) Stop() {
 type vncRemoton struct {
 	conn         net.Conn
 	onConnection func(net.Addr)
+	natif        nat.Interface
 }
 
 func newVncRemoton() *vncRemoton {
@@ -100,7 +102,7 @@ func newVncRemoton() *vncRemoton {
 func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 	var err error
 	port, _ := c.findFreePort()
-	addrSrv := "localhost:" + port
+	addrSrv := net.JoinHostPort("0.0.0.0", port)
 	err = xpra.Bind(addrSrv)
 	if err != nil {
 		log.Error("vncRemoton:", err)
@@ -113,6 +115,8 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 		return err
 	}
 	conn.Close()
+
+	c.startNat(addrSrv)
 	go c.startRPC(
 		common.Capabilities{
 			XpraVersion: xpra.Version(),
@@ -123,10 +127,42 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 	return nil
 }
 
+//startNat add support for nat
+func (c *vncRemoton) startNat(addrSrv string) error {
+	var err error
+
+	_, port, err := net.SplitHostPort(addrSrv)
+	if err != nil {
+		return err
+	}
+	iport, _ := strconv.Atoi(port)
+
+	c.natif, err = nat.Parse("any")
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	if _, err = c.natif.ExternalIP(); err != nil {
+		return err
+	}
+
+	if err = c.natif.DeleteMapping("TCP", 9932, iport); err != nil {
+		log.Infof("can't delete external map: %s", err.Error())
+	}
+
+	if err = c.natif.AddMapping("TCP", 9932, iport, "remoton", time.Hour); err != nil {
+		log.Infof("can't add mapping external map: %d -> %s", 9932, port)
+		return err
+	}
+
+	return nil
+}
+
 func (c *vncRemoton) startRPC(caps common.Capabilities, session *remoton.SessionClient, addrSrv string) {
 	l := session.Listen("rpc")
 	srv := rpc.NewServer()
-	srv.Register(&common.RemotonClient{&caps})
+	srv.Register(&common.RemotonClient{&caps, c.natif})
 	srv.Accept(l)
 }
 
@@ -203,7 +239,6 @@ type clientRemoton struct {
 }
 
 func newClient(rclient *remoton.Client) *clientRemoton {
-
 	return &clientRemoton{client: rclient,
 		Chat:    newChatRemoton(),
 		VNC:     newVncRemoton(),

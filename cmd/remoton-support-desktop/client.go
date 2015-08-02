@@ -96,6 +96,27 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
 			capsClient.XpraVersion, xpra.Version())
 	}
 
+	var clientExternalIP net.IP
+	err = rpcclient.Call("RemotonClient.GetExternalIP", struct{}{}, &clientExternalIP)
+	if err == nil {
+		log.Println(clientExternalIP)
+		return c.srvDirect(session, clientExternalIP)
+	}
+
+	return c.srvTunnel(session)
+}
+
+func (c *tunnelRemoton) srvDirect(session *remoton.SessionClient, externalIP net.IP) error {
+	log.Println("direct connection")
+	//TODO xpra connection by tcp it's insecure
+	err := xpra.Attach(net.JoinHostPort(externalIP.String(), "9932"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient) error {
 	port := c.findFreePort()
 	addrSrv := "localhost:" + port
 	log.Println("listen at " + addrSrv)
