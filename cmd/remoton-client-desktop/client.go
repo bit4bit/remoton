@@ -117,7 +117,7 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 }
 
 func (c *vncRemoton) start(session *remoton.SessionClient, addrSrv string) {
-	l := session.Listen("nx")
+	l := session.ListenTCP("nx")
 	for {
 		log.Println("vncRemoton.start: waiting connection")
 		wsconn, err := l.Accept()
@@ -129,7 +129,7 @@ func (c *vncRemoton) start(session *remoton.SessionClient, addrSrv string) {
 		if c.onConnection != nil {
 			c.onConnection(wsconn.RemoteAddr())
 		}
-
+		log.Println("vncRemoton.start: do tunneling")
 		conn, err := net.Dial("tcp", addrSrv)
 		if err != nil {
 			log.Error("vncRemoton.start:", addrSrv, err)

@@ -162,7 +162,6 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 
 	br := bufio.NewReader(conn)
 	bw := bufio.NewWriter(conn)
-	println(burl.RequestURI())
 	bw.WriteString("GET " + burl.RequestURI() + " HTTP/1.1\r\n")
 	bw.WriteString("Host: " + burl.Host + "\r\n")
 	bw.WriteString("Connection: Upgrade\r\n")
@@ -182,7 +181,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Error("sessionClient.dialTCP: http response error, ", resp.Status)
+		return nil, fmt.Errorf("sessionClient.dialTCP: http response error %s", resp.Status)
 	}
 
 	return conn, nil

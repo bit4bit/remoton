@@ -50,9 +50,12 @@ func main() {
 		&throttled.VaryBy{RemoteAddr: true},
 		store.NewMemStore(100),
 	)
-	srv := remoton.NewServer(*authToken, func() (string, string) {
-		return uuid.New()[0:8], uuid.New()[0:6]
-	})
+	mux := http.NewServeMux()
+	mux.Handle("/remoton/", http.StripPrefix("/remoton",
+		remoton.NewServer(*authToken, func() (string, string) {
+			return uuid.New()[0:8], uuid.New()[0:6]
+		})))
+
 	log.Println("Listen at HTTPS ", *listenAddr)
-	log.Fatal(http.ListenAndServeTLS(*listenAddr, *certFile, *keyFile, th.Throttle(srv)))
+	log.Fatal(http.ListenAndServeTLS(*listenAddr, *certFile, *keyFile, th.Throttle(mux)))
 }

@@ -89,7 +89,7 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
 				log.Error(err)
 				break
 			}
-			remote, err := session.Dial("nx")
+			remote, err := session.DialTCP("nx")
 			if err != nil {
 				log.Error(err)
 				listener.Close()
@@ -138,7 +138,6 @@ func (c *tunnelRemoton) findFreePort() string {
 		conn.Close()
 	}
 	panic("cant find free port")
-	return ""
 }
 
 func (c *tunnelRemoton) Terminate() {
