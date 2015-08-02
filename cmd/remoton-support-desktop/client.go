@@ -76,22 +76,25 @@ type tunnelRemoton struct {
 }
 
 func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
+
 	rpconn, err := session.Dial("rpc")
 	if err != nil {
 		return err
 	}
+	defer rpconn.Close()
 
 	rpcclient := rpc.NewClient(rpconn)
+	defer rpcclient.Close()
+
 	var capsClient common.Capabilities
 	err = rpcclient.Call("RemotonClient.GetCapabilities", struct{}{}, &capsClient)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 	if capsClient.XpraVersion != xpra.Version() {
 		return fmt.Errorf("mismatch xpra version was %s expected %s",
 			capsClient.XpraVersion, xpra.Version())
 	}
-	rpcclient.Close()
 
 	port := c.findFreePort()
 	addrSrv := "localhost:" + port
