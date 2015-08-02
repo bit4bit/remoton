@@ -1,14 +1,18 @@
 package main
 
 import (
-	"github.com/bit4bit/remoton"
-	"github.com/bit4bit/remoton/xpra"
-
-	log "github.com/Sirupsen/logrus"
+	"fmt"
 	"io"
 	"net"
+	"net/rpc"
 	"strconv"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+
+	"github.com/bit4bit/remoton"
+	"github.com/bit4bit/remoton/common"
+	"github.com/bit4bit/remoton/xpra"
 )
 
 type chatRemoton struct {
@@ -72,6 +76,23 @@ type tunnelRemoton struct {
 }
 
 func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
+	rpconn, err := session.Dial("rpc")
+	if err != nil {
+		return err
+	}
+
+	rpcclient := rpc.NewClient(rpconn)
+	var capsClient common.Capabilities
+	err = rpcclient.Call("RemotonClient.GetCapabilities", struct{}{}, &capsClient)
+	if err != nil {
+		log.Error(err)
+	}
+	if capsClient.XpraVersion != xpra.Version() {
+		return fmt.Errorf("mismatch xpra version was %s expected %s",
+			capsClient.XpraVersion, xpra.Version())
+	}
+	rpcclient.Close()
+
 	port := c.findFreePort()
 	addrSrv := "localhost:" + port
 	log.Println("listen at " + addrSrv)

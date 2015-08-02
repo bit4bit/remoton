@@ -4,12 +4,14 @@ import (
 	"crypto/x509"
 	"io"
 	"net"
+	"net/rpc"
 	"strconv"
 	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
+	"github.com/bit4bit/remoton/common"
 	"github.com/bit4bit/remoton/xpra"
 )
 
@@ -111,9 +113,21 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 		return err
 	}
 	conn.Close()
-
+	go c.startRPC(
+		common.Capabilities{
+			XpraVersion: xpra.Version(),
+		},
+		session,
+		addrSrv)
 	go c.start(session, addrSrv)
 	return nil
+}
+
+func (c *vncRemoton) startRPC(caps common.Capabilities, session *remoton.SessionClient, addrSrv string) {
+	l := session.Listen("rpc")
+	srv := rpc.NewServer()
+	srv.Register(&common.RemotonClient{&caps})
+	srv.Accept(l)
 }
 
 func (c *vncRemoton) start(session *remoton.SessionClient, addrSrv string) {

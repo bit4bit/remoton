@@ -4,13 +4,15 @@ package xpra
 import (
 	"bytes"
 	"errors"
-	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -27,6 +29,16 @@ var (
 	xpraCmd     *exec.Cmd
 	pathXpraCmd = path.Join(pathProgramFiles(), "Xpra", "xpra_cmd")
 )
+
+func Version() string {
+	xpraCmd = exec.Command(pathXpraCmd, "--version")
+	out, err := xpraCmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	return strings.Split(string(out), " ")[1]
+}
 
 func Attach(addr string) error {
 	xpraCmd = exec.Command(pathXpraCmd, "attach", "tcp:"+addr)

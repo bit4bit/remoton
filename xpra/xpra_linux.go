@@ -8,7 +8,6 @@ package xpra
 import (
 	"bytes"
 	"errors"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,8 +15,11 @@ import (
 	"path"
 	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -33,6 +35,20 @@ var (
 var (
 	xpraCmd *exec.Cmd
 )
+
+func Version() string {
+	xpraPath, err := exec.LookPath("xpra")
+	if err != nil {
+		return ""
+	}
+
+	xpraCmd = exec.Command(xpraPath, "--version")
+	out, err := xpraCmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.Split(string(out), " ")[1]
+}
 
 func Attach(addr string) error {
 	pid := load_pid(PID_FILE_SUPPORT)
