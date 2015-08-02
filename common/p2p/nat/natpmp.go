@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackpal/gateway"
 	"github.com/jackpal/go-nat-pmp"
 )
 
@@ -126,6 +127,10 @@ func potentialGateways() (gws []net.IP) {
 				}
 			}
 		}
+	}
+	wip, err := gateway.DiscoverGateway()
+	if err == nil {
+		gws = append(gws, wip)
 	}
 	return gws
 }
