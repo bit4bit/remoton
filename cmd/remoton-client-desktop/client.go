@@ -30,6 +30,7 @@ func newChatRemoton() *chatRemoton {
 	}
 }
 
+//Send message to next peer
 func (c *chatRemoton) Send(msg string) {
 	for _, f := range c.cbSend {
 		if f != nil {
@@ -39,15 +40,18 @@ func (c *chatRemoton) Send(msg string) {
 
 }
 
+//OnRecv callback for new message
 func (c *chatRemoton) OnRecv(f func(msg string)) {
 	c.onRecv = f
 }
+
 func (c *chatRemoton) init() {
 	if c.cbSend == nil {
 		c.cbSend = make(map[net.Conn]func(string))
 	}
 }
 
+//Start service
 func (c *chatRemoton) Start(session *remoton.SessionClient) {
 	go c.start(session)
 }
@@ -99,16 +103,17 @@ func newVncRemoton() *vncRemoton {
 	return &vncRemoton{}
 }
 
-func (c *vncRemoton) Start(session *remoton.SessionClient) error {
+//Start vnc server now it's xpra and connect to server
+func (c *vncRemoton) Start(session *remoton.SessionClient, password string) error {
 	var err error
 	port, _ := c.findFreePort()
 	addrSrv := net.JoinHostPort("0.0.0.0", port)
-	err = xpra.Bind(addrSrv)
+	err = xpra.Bind(addrSrv, password)
 	if err != nil {
 		log.Error("vncRemoton:", err)
 		return err
 	}
-
+	log.Println("started xpra")
 	conn, err := net.DialTimeout("tcp", addrSrv, time.Second*3)
 	if err != nil {
 		xpra.Terminate()
@@ -116,7 +121,7 @@ func (c *vncRemoton) Start(session *remoton.SessionClient) error {
 	}
 	conn.Close()
 
-	c.startNat(addrSrv)
+	go c.startNat(addrSrv)
 	go c.startRPC(
 		common.Capabilities{
 			XpraVersion: xpra.Version(),
@@ -253,14 +258,14 @@ func (c *clientRemoton) SetCertPool(roots *x509.CertPool) {
 	c.client.TLSConfig.RootCAs = roots
 }
 
-func (c *clientRemoton) Start(srvAddr string, authToken string) error {
+func (c *clientRemoton) Start(srvAddr string, authToken, password string) error {
 	var err error
 	c.session, err = c.client.NewSession("https://"+srvAddr, authToken)
 	if err != nil {
 		return err
 	}
 
-	err = c.VNC.Start(c.session)
+	err = c.VNC.Start(c.session, password)
 	if err != nil {
 		return err
 	}
@@ -275,14 +280,6 @@ func (c *clientRemoton) MachineID() string {
 		return ""
 	}
 	return c.session.ID
-}
-
-func (c *clientRemoton) MachineAuth() string {
-	if c.session == nil {
-		return ""
-	}
-
-	return c.session.AuthToken
 }
 
 func (c *clientRemoton) Stop() {

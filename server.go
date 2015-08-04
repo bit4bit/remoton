@@ -38,14 +38,14 @@ type Server struct {
 
 	//sessions handle sessions any session can have only 2 connections
 	//one for the producer and one for the consumer
-	sessions      *sessionManager
-	authGenerator func() (string, string)
+	sessions    *sessionManager
+	idGenerator func() string
 }
 
 //New create a new Server it't interface http.Handler
 //can handle with http.ListenAndServer
-func NewServer(authToken string, authGenerator func() (string, string)) *Server {
-	r := &Server{httprouter.New(), NewSessionManager(), authGenerator}
+func NewServer(authToken string, idGenerator func() string) *Server {
+	r := &Server{httprouter.New(), NewSessionManager(), idGenerator}
 	r.RedirectFixedPath = false
 
 	r.POST("/session", hAuth(authToken, r.hNewSession))
@@ -59,16 +59,14 @@ func NewServer(authToken string, authGenerator func() (string, string)) *Server 
 
 //hNewSession create a session and return ID:USERNAME:PASSWORD
 func (c *Server) hNewSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	id, authSession := c.authGenerator()
+	id := c.idGenerator()
 
-	c.sessions.Add(id, newSession(id, authSession))
+	c.sessions.Add(id, newSession(id))
 
 	resp := struct {
-		ID        string
-		AuthToken string
+		ID string
 	}{
-		ID:        id,
-		AuthToken: authSession,
+		ID: id,
 	}
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -84,13 +82,7 @@ func (c *Server) hNewSession(w http.ResponseWriter, r *http.Request, _ httproute
 //hDestroySession destroy a session
 //need header *X-Auth-Username* and *X-Auth-Password*
 func (c *Server) hDestroySession(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	if session := c.sessions.Get("id"); session != nil {
-		if !authenticateSession(session, r) {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		c.sessions.Del(params.ByName("id"))
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -102,11 +94,6 @@ func (c *Server) hSessionDial(w http.ResponseWriter, r *http.Request, params htt
 	session := c.sessions.Get(params.ByName("id"))
 	if session == nil {
 		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if !authenticateSession(session, r) {
-		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
@@ -128,11 +115,6 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 		return
 	}
 
-	if !authenticateSession(session, r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	kservice := params.ByName("service")
 
 	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
@@ -143,10 +125,6 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 	}
 
 	w.WriteHeader(http.StatusInternalServerError)
-}
-
-func authenticateSession(session *srvSession, r *http.Request) bool {
-	return session.ValidateAuthToken(r.Header.Get("X-Auth-Session"))
 }
 
 func hAuth(authToken string, handler httprouter.Handle) httprouter.Handle {

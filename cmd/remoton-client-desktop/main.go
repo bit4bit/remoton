@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
 
@@ -19,13 +20,15 @@ import (
 )
 
 var (
-	clremoton *clientRemoton
+	clremoton       *clientRemoton
+	machinePassword string
 )
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	common.SetDefaultGtkTheme()
 
+	machinePassword = uuid.New()[:4]
 	clremoton = newClient(&remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}})
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGABRT, syscall.SIGKILL, syscall.SIGTERM)
@@ -110,7 +113,9 @@ func main() {
 
 		if !clremoton.Started() {
 			log.Println("starting remoton")
-			err := clremoton.Start(serverEntry.GetText(), authServerEntry.GetText())
+			machinePassword = uuid.New()[:4]
+			err := clremoton.Start(serverEntry.GetText(), authServerEntry.GetText(),
+				machinePassword)
 
 			if err != nil {
 				dialogError(btnSrv.GetTopLevelAsWindow(), err)
@@ -119,7 +124,7 @@ func main() {
 				btnSrv.SetLabel("Stop")
 
 				machineIDEntry.SetText(clremoton.MachineID())
-				machineAuthEntry.SetText(clremoton.MachineAuth())
+				machineAuthEntry.SetText(machinePassword)
 				statusbar.Push(context_id, "Connected")
 			}
 

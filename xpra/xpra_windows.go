@@ -40,8 +40,9 @@ func Version() string {
 	return strings.Split(string(out), " ")[1]
 }
 
-func Attach(addr string) error {
-	xpraCmd = exec.Command(pathXpraCmd, "attach", "tcp:"+addr)
+func Attach(addr, password string) error {
+	xpraCmd = exec.Command(pathXpraCmd, "attach", "tcp:"+addr, "--auth=file",
+		"--password-file="+generaPasswdFile(password))
 
 	if err := xpraCmd.Start(); err != nil {
 		log.Error("xpra_attach:", err)
@@ -51,10 +52,12 @@ func Attach(addr string) error {
 	return nil
 }
 
-func Bind(addr string) error {
+func Bind(addr, password string) error {
 	var out bytes.Buffer
 
-	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--no-mdns", "--bind-tcp="+addr)
+	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--no-mdns",
+		"--bind-tcp="+addr, "--auth=file",
+		"--password-file="+generaPasswdFile(password))
 	xpraCmd.Stderr = &out
 	if err := xpraCmd.Start(); err != nil {
 		log.Error("xpra_bind:", err)
@@ -108,6 +111,7 @@ func Terminate() {
 	if xpraCmd != nil && xpraCmd.Process != nil {
 		xpraCmd.Process.Kill()
 	}
+	cleanTempFiles()
 }
 
 func init() {

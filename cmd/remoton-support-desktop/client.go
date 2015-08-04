@@ -75,7 +75,7 @@ type tunnelRemoton struct {
 	listener net.Listener
 }
 
-func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
+func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) error {
 
 	rpconn, err := session.Dial("rpc")
 	if err != nil {
@@ -100,23 +100,26 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient) error {
 	err = rpcclient.Call("RemotonClient.GetExternalIP", struct{}{}, &clientExternalIP)
 	if err == nil {
 		log.Println(clientExternalIP)
-		return c.srvDirect(session, clientExternalIP)
+		return c.srvDirect(session, clientExternalIP, password)
 	}
 
-	return c.srvTunnel(session)
+	return c.srvTunnel(session, password)
 }
 
-func (c *tunnelRemoton) srvDirect(session *remoton.SessionClient, externalIP net.IP) error {
+func (c *tunnelRemoton) srvDirect(session *remoton.SessionClient,
+	externalIP net.IP, password string) error {
 	log.Println("direct connection")
-	//TODO xpra connection by tcp it's insecure
-	err := xpra.Attach(net.JoinHostPort(externalIP.String(), "9932"))
+
+	err := xpra.Attach(net.JoinHostPort(externalIP.String(), "9932"),
+		password)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient) error {
+func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient,
+	password string) error {
 	port := c.findFreePort()
 	addrSrv := "localhost:" + port
 	log.Println("listen at " + addrSrv)
@@ -146,7 +149,7 @@ func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient) error {
 		}
 	}(listener)
 
-	err = xpra.Attach(addrSrv)
+	err = xpra.Attach(addrSrv, password)
 	if err != nil {
 		listener.Close()
 		return err

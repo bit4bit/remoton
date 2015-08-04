@@ -50,7 +50,7 @@ func Version() string {
 	return strings.Split(string(out), " ")[1]
 }
 
-func Attach(addr string) error {
+func Attach(addr, password string) error {
 	pid := load_pid(PID_FILE_SUPPORT)
 	log.Println(pid)
 	if pid > 0 {
@@ -64,7 +64,8 @@ func Attach(addr string) error {
 		return err
 	}
 
-	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr, "-z9")
+	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr, "-z9",
+		"--password-file="+generaPasswdFile(password), "--auth=file")
 
 	if err := xpraCmd.Start(); err != nil {
 		log.Error("xpra_attach:", err)
@@ -74,7 +75,7 @@ func Attach(addr string) error {
 	return nil
 }
 
-func Bind(addr string) error {
+func Bind(addr, password string) error {
 	pid := load_pid(PID_FILE_CLIENT)
 	log.Println(pid)
 	if pid > 0 {
@@ -90,7 +91,9 @@ func Bind(addr string) error {
 
 	var out bytes.Buffer
 
-	xpraCmd = exec.Command(xpraPath, "shadow", ":0", "--no-daemon", "--no-mdns", "--bind-tcp="+addr)
+	xpraCmd = exec.Command(xpraPath, "shadow", ":0",
+		"--no-daemon", "--no-mdns",
+		"--bind-tcp="+addr, "--auth=file", "--password-file="+generaPasswdFile(password))
 	xpraCmd.Stderr = &out
 
 	if err := xpraCmd.Start(); err != nil {
@@ -125,6 +128,7 @@ func Terminate() {
 	if xpraCmd != nil && xpraCmd.Process != nil {
 		xpraCmd.Process.Kill()
 	}
+	cleanTempFiles()
 }
 
 func get_pid_path(pid_name string) string {
@@ -138,6 +142,7 @@ func get_pid_path(pid_name string) string {
 
 	return path.Join(u.HomeDir, pid_name)
 }
+
 func save_pid(pid int, pid_name string) {
 
 	pidPath := get_pid_path(pid_name)

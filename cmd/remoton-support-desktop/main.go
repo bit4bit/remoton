@@ -115,8 +115,6 @@ func main() {
 
 	controlBox.Add(gtk.NewLabel("Machine AUTH"))
 	machineAuthEntry := gtk.NewEntry()
-	machineAuthEntry.SetInvisibleChar('*')
-	machineAuthEntry.SetVisibility(false)
 	controlBox.Add(machineAuthEntry)
 
 	controlBox.Add(gtk.NewLabel("Server"))
@@ -137,7 +135,7 @@ func main() {
 		rclient.TLSConfig.RootCAs = certPool
 
 		session := &remoton.SessionClient{Client: rclient,
-			ID: machineIDEntry.GetText(), AuthToken: machineAuthEntry.GetText(),
+			ID:     machineIDEntry.GetText(),
 			APIURL: "https://" + serverEntry.GetText()}
 
 		if !started {
@@ -147,7 +145,7 @@ func main() {
 				return
 			}
 
-			err = tunnelSrv.Start(session)
+			err = tunnelSrv.Start(session, machineAuthEntry.GetText())
 			if err != nil {
 				dialogError(btn.GetTopLevelAsWindow(), err)
 				return

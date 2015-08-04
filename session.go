@@ -8,9 +8,6 @@ import (
 
 //Session create from client
 type srvSession struct {
-	ID        string
-	AuthToken string
-
 	mutex   sync.Mutex
 	service map[string]chan net.Conn
 
@@ -19,15 +16,10 @@ type srvSession struct {
 	}
 }
 
-func newSession(id, auth string) *srvSession {
-	return &srvSession{ID: id,
-		AuthToken: auth,
-		service:   make(map[string]chan net.Conn),
+func newSession(auth string) *srvSession {
+	return &srvSession{
+		service: make(map[string]chan net.Conn),
 	}
-}
-
-func (c *srvSession) ValidateAuthToken(auth string) bool {
-	return c.AuthToken == auth
 }
 
 func (c *srvSession) initService(id string) {
