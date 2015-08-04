@@ -9,6 +9,7 @@ import (
 	"net/rpc"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -98,13 +99,28 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) e
 			capsClient.XpraVersion, xpra.Version())
 	}
 
+	serverDirect := false
 	var clientExternalIP net.IP
+	var clientExternalPort int
 	err = rpcclient.Call("RemotonClient.GetExternalIP", struct{}{}, &clientExternalIP)
 	if err == nil {
-		log.Println(clientExternalIP)
-		return c.srvDirect(session, clientExternalIP, password)
+		rpcclient.Call("RemotonClient.GetExternalPort", struct{}{}, &clientExternalPort)
+		conn, err := net.DialTimeout("tcp",
+			fmt.Sprintf("%s:%d", clientExternalIP.String(), clientExternalPort),
+			time.Second*3)
+		if err == nil {
+			conn.Close()
+			serverDirect = true
+		} else {
+			log.Infof("failed connect direct to client %s:%d fallback to server",
+				clientExternalIP, clientExternalPort)
+		}
+
 	}
 
+	if serverDirect {
+		return c.srvDirect(session, clientExternalIP, password)
+	}
 	return c.srvTunnel(session, password)
 }
 

@@ -33,7 +33,7 @@ type SessionClient struct {
 	*Client
 
 	ID        string
-	AuthToken string
+	authToken string
 
 	//WSURL web socket url by default it try
 	//to guess from baseUrl
@@ -86,7 +86,7 @@ func (c *SessionListenTCP) Addr() net.Addr {
 }
 
 func (c *Client) Session(id string, authToken string) *SessionClient {
-	return &SessionClient{Client: c, ID: id, AuthToken: authToken}
+	return &SessionClient{Client: c, ID: id, authToken: authToken}
 }
 
 func (c *Client) NewSession(_url string, authToken string) (*SessionClient, error) {
@@ -122,7 +122,7 @@ func (c *Client) NewSession(_url string, authToken string) (*SessionClient, erro
 
 func (c *SessionClient) Destroy() {
 	req, _ := http.NewRequest("DELETE", c.APIURL+"/session/"+c.ID, nil)
-	req.Header.Set("X-Auth-Session", c.AuthToken)
+	req.Header.Set("X-Auth-Session", c.authToken)
 	c.hclient.Do(req)
 }
 
@@ -150,7 +150,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 	}
 	burl.Path += fmt.Sprintf("%s/session/%s/conn/%s%s/tcp", c.Prefix, c.ID, service, action)
 	req, err := http.NewRequest("GET", burl.String(), nil)
-	req.Header.Set("X-Auth-Session", c.AuthToken)
+	req.Header.Set("X-Auth-Session", c.authToken)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 	bw.WriteString("Host: " + burl.Host + "\r\n")
 	bw.WriteString("Connection: Upgrade\r\n")
 	header := http.Header{}
-	header.Set("X-Auth-Session", c.AuthToken)
+	header.Set("X-Auth-Session", c.authToken)
 	err = header.Write(bw)
 	if err != nil {
 		return nil, err
@@ -220,7 +220,6 @@ func (c *SessionClient) dialWebsocket(service string, action string) (*websocket
 
 	//TODO use root cert
 	conf.TlsConfig = c.TLSConfig
-	conf.Header.Set("X-Auth-Session", c.AuthToken)
 
 	wsconn, err := websocket.DialConfig(conf)
 	if err != nil {

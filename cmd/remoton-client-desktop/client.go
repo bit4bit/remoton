@@ -97,6 +97,7 @@ type vncRemoton struct {
 	conn         net.Conn
 	onConnection func(net.Addr)
 	natif        nat.Interface
+	iport        int
 }
 
 func newVncRemoton() *vncRemoton {
@@ -106,20 +107,23 @@ func newVncRemoton() *vncRemoton {
 //Start vnc server now it's xpra and connect to server
 func (c *vncRemoton) Start(session *remoton.SessionClient, password string) error {
 	var err error
-	port, _ := c.findFreePort()
+	var port string
+	port, c.iport = c.findFreePort()
+
 	addrSrv := net.JoinHostPort("0.0.0.0", port)
+
 	err = xpra.Bind(addrSrv, password)
 	if err != nil {
 		log.Error("vncRemoton:", err)
 		return err
 	}
-	log.Println("started xpra")
-	conn, err := net.DialTimeout("tcp", addrSrv, time.Second*3)
+	conn, err := net.DialTimeout("tcp", "localhost:"+port, time.Second*3)
 	if err != nil {
 		xpra.Terminate()
 		return err
 	}
 	conn.Close()
+	log.Println("started xpra")
 
 	go c.startNat(addrSrv)
 	go c.startRPC(
@@ -128,19 +132,13 @@ func (c *vncRemoton) Start(session *remoton.SessionClient, password string) erro
 		},
 		session,
 		addrSrv)
-	go c.start(session, addrSrv)
+	go c.start(session, "localhost:"+port)
 	return nil
 }
 
 //startNat add support for nat
 func (c *vncRemoton) startNat(addrSrv string) error {
 	var err error
-
-	_, port, err := net.SplitHostPort(addrSrv)
-	if err != nil {
-		return err
-	}
-	iport, _ := strconv.Atoi(port)
 
 	c.natif, err = nat.Parse("any")
 	if err != nil {
@@ -152,16 +150,24 @@ func (c *vncRemoton) startNat(addrSrv string) error {
 		return err
 	}
 
-	if err = c.natif.DeleteMapping("TCP", 9932, iport); err != nil {
+	if err = c.natif.DeleteMapping("TCP", 9932, c.iport); err != nil {
 		log.Infof("can't delete external map: %s", err.Error())
 	}
 
-	if err = c.natif.AddMapping("TCP", 9932, iport, "remoton", time.Hour); err != nil {
-		log.Infof("can't add mapping external map: %d -> %s", 9932, port)
+	if err = c.natif.AddMapping("TCP", 9932, c.iport, "remoton", time.Hour); err != nil {
+		log.Infof("can't add mapping external map: %d -> %d", 9932, c.iport)
 		return err
 	}
 
 	return nil
+}
+
+func (c *vncRemoton) stopNat() {
+	if c.natif != nil {
+		if err := c.natif.DeleteMapping("TCP", 9932, c.iport); err != nil {
+			log.Infof("can't delete external map: %s", err.Error())
+		}
+	}
 }
 
 func (c *vncRemoton) startRPC(caps common.Capabilities, session *remoton.SessionClient, addrSrv string) {
@@ -231,7 +237,7 @@ func (c *vncRemoton) Stop() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
-
+	c.stopNat()
 	xpra.Terminate()
 }
 

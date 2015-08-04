@@ -65,7 +65,6 @@ func Bind(addr, password string) error {
 		log.Error("xpra_bind:", err)
 		return err
 	}
-
 	xprayReady := regexp.MustCompile(`xpra is ready.`)
 	xprayError := regexp.MustCompile("failed|error")
 	xprayClosing := regexp.MustCompile("closing tcp socket localhost")

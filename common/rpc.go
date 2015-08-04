@@ -29,10 +29,6 @@ func (c *RemotonClient) GetExternalIP(args struct{}, reply *net.IP) (err error) 
 }
 
 func (c *RemotonClient) GetExternalPort(args struct{}, reply *int) error {
-	if _, err := c.NatIF.ExternalIP(); err != nil {
-		return err
-	}
-
 	//TODO this need to be dinamic
 	*reply = 9932
 	return nil

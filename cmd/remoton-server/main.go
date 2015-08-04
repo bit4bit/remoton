@@ -10,9 +10,9 @@ import (
 	"github.com/bit4bit/remoton"
 
 	"code.google.com/p/go-uuid/uuid"
-	"github.com/PuerkitoBio/throttled"
-	"github.com/PuerkitoBio/throttled/store"
 	log "github.com/Sirupsen/logrus"
+	"github.com/throttled/throttled"
+	"github.com/throttled/throttled/store"
 )
 
 var (
