@@ -90,6 +90,10 @@ func main() {
 	controlBox.Add(gtk.NewLabel("Server"))
 	serverEntry := gtk.NewEntry()
 	serverEntry.SetText("127.0.0.1:9934")
+	if os.Getenv("REMOTON_SERVER") != "" {
+		serverEntry.SetText(os.Getenv("REMOTON_SERVER"))
+		serverEntry.SetEditable(false)
+	}
 	controlBox.Add(serverEntry)
 
 	controlBox.Add(gtk.NewLabel("Auth Server"))

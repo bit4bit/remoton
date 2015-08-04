@@ -1,6 +1,8 @@
-/*support-desktop
-GUI support remoton
-*/
+//Package remoton-client-desktop
+//GUI for sharing desktop.
+//
+//Environment Vars:
+//  * REMOTON_SERVER : set default remote server to connect
 package main
 
 import (
@@ -120,6 +122,10 @@ func main() {
 	controlBox.Add(gtk.NewLabel("Server"))
 	serverEntry := gtk.NewEntry()
 	serverEntry.SetText("localhost:9934")
+	if os.Getenv("REMOTON_SERVER") != "" {
+		serverEntry.SetText(os.Getenv("REMOTON_SERVER"))
+		serverEntry.SetEditable(false)
+	}
 	controlBox.Add(serverEntry)
 
 	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
