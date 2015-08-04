@@ -51,7 +51,7 @@ func Version() string {
 	if err != nil {
 		return ""
 	}
-	return strings.Split(string(out), " ")[1]
+	return strings.TrimSpace(strings.Split(string(out), " ")[1])
 }
 
 //Attach to xpra

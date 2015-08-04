@@ -37,7 +37,7 @@ func Version() string {
 		return ""
 	}
 
-	return strings.Split(string(out), " ")[1]
+	return strings.TrimSpace(strings.Split(string(out), " ")[1])
 }
 
 //Attach to xpra server

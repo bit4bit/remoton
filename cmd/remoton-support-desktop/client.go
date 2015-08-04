@@ -93,7 +93,7 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) e
 	if err != nil {
 		return err
 	}
-	if capsClient.XpraVersion != xpra.Version() {
+	if !strings.EqualFold(capsClient.XpraVersion, xpra.Version()) {
 		return fmt.Errorf("mismatch xpra version was %s expected %s",
 			capsClient.XpraVersion, xpra.Version())
 	}

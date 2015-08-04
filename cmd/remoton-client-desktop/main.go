@@ -1,3 +1,8 @@
+//Package remoton-client-desktop
+//GUI for sharing desktop.
+//
+//Environment Vars:
+//  * REMOTON_SERVER : set default remote server to connect
 package main
 
 import (
