@@ -1,3 +1,4 @@
+//Package xpra for windows
 //+build windows
 package xpra
 
@@ -15,13 +16,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-const (
-	PID_FILE_CLIENT  = ".remotonclient.pid"
-	PID_FILE_SUPPORT = ".remotonsupport.pid"
-)
-
 var (
-	ErrNotXPRA    = errors.New("Failed not found executable xpra")
+	//ErrNotXPRA can't find xpra on system
+	ErrNotXPRA = errors.New("Failed not found executable xpra")
+
+	//ErrClosingTCP a error from xpra
 	ErrClosingTCP = errors.New("closing tcp socket")
 )
 
@@ -30,6 +29,7 @@ var (
 	pathXpraCmd = path.Join(pathProgramFiles(), "Xpra", "xpra_cmd")
 )
 
+//Version of xpra
 func Version() string {
 	xpraCmd = exec.Command(pathXpraCmd, "--version")
 	out, err := xpraCmd.Output()
@@ -40,6 +40,7 @@ func Version() string {
 	return strings.Split(string(out), " ")[1]
 }
 
+//Attach to xpra server
 func Attach(addr, password string) error {
 	xpraCmd = exec.Command(pathXpraCmd, "attach", "tcp:"+addr, "--auth=file",
 		"--password-file="+generaPasswdFile(password))
@@ -52,6 +53,7 @@ func Attach(addr, password string) error {
 	return nil
 }
 
+//Bind a xpra server for listen connections
 func Bind(addr, password string) error {
 	var out bytes.Buffer
 
@@ -107,6 +109,7 @@ func Bind(addr, password string) error {
 	return errors.New("Failed start xpra server")
 }
 
+//Terminate the running xpra
 func Terminate() {
 	if xpraCmd != nil && xpraCmd.Process != nil {
 		xpraCmd.Process.Kill()
@@ -121,7 +124,7 @@ func init() {
 func pathProgramFiles() string {
 	if runtime.GOARCH == "amd64" {
 		return os.Getenv("ProgramFiles(x86)")
-	} else {
-		return os.Getenv("ProgramFiles")
 	}
+	return os.Getenv("ProgramFiles")
+
 }

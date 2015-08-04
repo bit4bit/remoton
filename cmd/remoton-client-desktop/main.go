@@ -69,7 +69,7 @@ func main() {
 	hpaned := gtk.NewHPaned()
 	appLayout.Add(hpaned)
 	statusbar := gtk.NewStatusbar()
-	context_id := statusbar.GetContextId("remoton-desktop-client")
+	contextID := statusbar.GetContextId("remoton-desktop-client")
 
 	//---
 	//CONTROL
@@ -100,7 +100,7 @@ func main() {
 	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
 	btnSrv := gtk.NewButtonWithLabel("Start")
 	clremoton.VNC.OnConnection(func(addr net.Addr) {
-		statusbar.Push(context_id, "Someone connected")
+		statusbar.Push(contextID, "Someone connected")
 		log.Println("New connection from:" + addr.String())
 	})
 	btnSrv.Clicked(func() {
@@ -119,13 +119,13 @@ func main() {
 
 			if err != nil {
 				dialogError(btnSrv.GetTopLevelAsWindow(), err)
-				statusbar.Push(context_id, "Failed")
+				statusbar.Push(contextID, "Failed")
 			} else {
 				btnSrv.SetLabel("Stop")
 
 				machineIDEntry.SetText(clremoton.MachineID())
 				machineAuthEntry.SetText(machinePassword)
-				statusbar.Push(context_id, "Connected")
+				statusbar.Push(contextID, "Connected")
 			}
 
 		} else {
@@ -133,7 +133,7 @@ func main() {
 			btnSrv.SetLabel("Start")
 			machineIDEntry.SetText("")
 			machineAuthEntry.SetText("")
-			statusbar.Push(context_id, "Stopped")
+			statusbar.Push(contextID, "Stopped")
 
 		}
 

@@ -1,3 +1,5 @@
+// Package remoton-client-desktop
+// Shared desktop to support user.
 package main
 
 import (

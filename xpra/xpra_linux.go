@@ -23,12 +23,15 @@ import (
 )
 
 const (
-	PID_FILE_CLIENT  = ".remotonclient.pid"
-	PID_FILE_SUPPORT = ".remotonsupport.pid"
+	pidFileClient  = ".remotonclient.pid"
+	pidFileSupport = ".remotonsupport.pid"
 )
 
 var (
-	ErrNotXPRA    = errors.New("Failed not found executable xpra")
+	//ErrNotXPRA not found on system xpra
+	ErrNotXPRA = errors.New("Failed not found executable xpra")
+
+	//ErrClosingTCP error xpra
 	ErrClosingTCP = errors.New("closing tcp socket")
 )
 
@@ -36,6 +39,7 @@ var (
 	xpraCmd *exec.Cmd
 )
 
+//Version of system xpra
 func Version() string {
 	xpraPath, err := exec.LookPath("xpra")
 	if err != nil {
@@ -50,12 +54,13 @@ func Version() string {
 	return strings.Split(string(out), " ")[1]
 }
 
+//Attach to xpra
 func Attach(addr, password string) error {
-	pid := load_pid(PID_FILE_SUPPORT)
+	pid := loadPid(pidFileSupport)
 	log.Println(pid)
 	if pid > 0 {
 		syscall.Kill(pid, syscall.SIGKILL)
-		syscall.Unlink(get_pid_path(PID_FILE_SUPPORT))
+		syscall.Unlink(getPidPath(pidFileSupport))
 	}
 
 	xpraPath, err := exec.LookPath("xpra")
@@ -75,12 +80,13 @@ func Attach(addr, password string) error {
 	return nil
 }
 
+//Bind a xpra for listen connections
 func Bind(addr, password string) error {
-	pid := load_pid(PID_FILE_CLIENT)
+	pid := loadPid(pidFileClient)
 	log.Println(pid)
 	if pid > 0 {
 		syscall.Kill(pid, syscall.SIGKILL)
-		syscall.Unlink(get_pid_path(PID_FILE_CLIENT))
+		syscall.Unlink(getPidPath(pidFileClient))
 	}
 
 	xpraPath, err := exec.LookPath("xpra")
@@ -108,7 +114,7 @@ func Bind(addr, password string) error {
 		time.Sleep(time.Second)
 
 		if xprayReady.Match(out.Bytes()) {
-			save_pid(xpraCmd.Process.Pid, PID_FILE_CLIENT)
+			savePid(xpraCmd.Process.Pid, pidFileClient)
 			return nil
 		}
 
@@ -124,6 +130,7 @@ func Bind(addr, password string) error {
 	}
 }
 
+//Terminate running xpra
 func Terminate() {
 	if xpraCmd != nil && xpraCmd.Process != nil {
 		xpraCmd.Process.Kill()
@@ -131,21 +138,21 @@ func Terminate() {
 	cleanTempFiles()
 }
 
-func get_pid_path(pid_name string) string {
+func getPidPath(pidName string) string {
 	u, err := user.Current()
 	if err != nil {
 		panic(err)
 	}
-	if pid_name == "" {
+	if pidName == "" {
 		panic("invalid pid_name can't be empty")
 	}
 
-	return path.Join(u.HomeDir, pid_name)
+	return path.Join(u.HomeDir, pidName)
 }
 
-func save_pid(pid int, pid_name string) {
+func savePid(pid int, pidName string) {
 
-	pidPath := get_pid_path(pid_name)
+	pidPath := getPidPath(pidName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 
 		err := ioutil.WriteFile(pidPath, []byte(strconv.Itoa(pid)), os.ModePerm)
@@ -155,9 +162,9 @@ func save_pid(pid int, pid_name string) {
 	}
 }
 
-func load_pid(pid_name string) int {
+func loadPid(pidName string) int {
 
-	pidPath := get_pid_path(pid_name)
+	pidPath := getPidPath(pidName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 
 	} else {

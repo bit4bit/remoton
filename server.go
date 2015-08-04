@@ -22,7 +22,7 @@ var (
 
 var tunnelTypes map[string]func(net.Conn) http.Handler
 
-//RegisterTranslatorType for handling connections
+// RegisterTunnelType for handling type of connections
 func RegisterTunnelType(typ string, f func(net.Conn) http.Handler) {
 	if tunnelTypes == nil {
 		tunnelTypes = make(map[string]func(net.Conn) http.Handler)
@@ -42,7 +42,7 @@ type Server struct {
 	idGenerator func() string
 }
 
-//New create a new Server it't interface http.Handler
+//NewServer create a new connection it't interface http.Handler
 //can handle with http.ListenAndServer
 func NewServer(authToken string, idGenerator func() string) *Server {
 	r := &Server{httprouter.New(), NewSessionManager(), idGenerator}
