@@ -11,8 +11,8 @@ import (
 //TestDialAndListen test websocket tunnel
 func TestDialAndListen(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.Handle("/remoton/", http.StripPrefix("/remoton", NewServer("testsrv", func() (string, string) {
-		return "testid", "testauth"
+	mux.Handle("/remoton/", http.StripPrefix("/remoton", NewServer("testsrv", func() string {
+		return "testid"
 	})))
 
 	ts := httptest.NewTLSServer(mux)
@@ -51,8 +51,8 @@ func TestDialAndListen(t *testing.T) {
 //TestDialAndListenTCP tcp tunnel
 func TestDialAndListenTCP(t *testing.T) {
 
-	ts := httptest.NewTLSServer(NewServer("testsrv", func() (string, string) {
-		return "testid", "testauth"
+	ts := httptest.NewTLSServer(NewServer("testsrv", func() string {
+		return "testid"
 	}))
 
 	defer ts.Close()
