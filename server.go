@@ -4,8 +4,13 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
+)
+
+const (
+	timeoutDefaultListen = time.Minute * 20
 )
 
 type requestTunnel struct {
@@ -50,7 +55,7 @@ func NewServer(authToken string, idGenerator func() string) *Server {
 
 	r.POST("/session", hAuth(authToken, r.hNewSession))
 	//DELETE active session this not close active connections
-	r.DELETE("/session/:id", r.hDestroySession)
+	r.DELETE("/session/:id", hAuth(authToken, r.hDestroySession))
 	r.GET("/session/:id/conn/:service/dial/:tunnel", r.hSessionDial)
 	r.GET("/session/:id/conn/:service/listen/:tunnel", r.hSessionListen)
 
@@ -118,10 +123,17 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 	kservice := params.ByName("service")
 
 	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
-		tunnel := <-session.ListenService(kservice)
-		defer tunnel.Close()
-		trans(tunnel).ServeHTTP(w, r)
-		return
+		chtunnel := session.ListenService(kservice)
+		select {
+		case tunnel := <-chtunnel:
+			defer tunnel.Close()
+			trans(tunnel).ServeHTTP(w, r)
+			return
+		case <-time.After(timeoutDefaultListen):
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
+
 	}
 
 	w.WriteHeader(http.StatusInternalServerError)
