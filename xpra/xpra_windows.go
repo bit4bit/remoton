@@ -57,8 +57,8 @@ func Attach(addr, password string) error {
 func Bind(addr, password string) error {
 	var out bytes.Buffer
 
-	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--no-mdns",
-		"--bind-tcp="+addr, "--auth=file",
+	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--mdns=no",
+		"--bind-tcp="+addr, "--auth=allow",
 		"--password-file="+generaPasswdFile(password))
 	xpraCmd.Stderr = &out
 	if err := xpraCmd.Start(); err != nil {

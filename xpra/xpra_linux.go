@@ -98,7 +98,7 @@ func Bind(addr, password string) error {
 	var out bytes.Buffer
 
 	xpraCmd = exec.Command(xpraPath, "shadow", ":0",
-		"--no-daemon", "--no-mdns",
+		"--daemon=no", "--mdns=no",
 		"--bind-tcp="+addr, "--auth=file", "--password-file="+generaPasswdFile(password))
 	xpraCmd.Stderr = &out
 
