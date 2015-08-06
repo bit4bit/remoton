@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"net/rpc"
-	"strconv"
 	"strings"
 	"time"
 
@@ -108,7 +107,7 @@ func newVncRemoton() *vncRemoton {
 func (c *vncRemoton) Start(session *remoton.SessionClient, password string) error {
 	var err error
 	var port string
-	port, c.iport = c.findFreePort()
+	port, c.iport = common.FindFreePortTCP(6900)
 
 	addrSrv := net.JoinHostPort("0.0.0.0", port)
 
@@ -173,7 +172,10 @@ func (c *vncRemoton) stopNat() {
 func (c *vncRemoton) startRPC(caps common.Capabilities, session *remoton.SessionClient, addrSrv string) {
 	l := session.Listen("rpc")
 	srv := rpc.NewServer()
-	srv.Register(&common.RemotonClient{&caps, c.natif})
+	srv.Register(&common.RemotonClient{
+		Capabilities: &caps,
+		NatIF:        c.natif,
+	})
 	srv.Accept(l)
 }
 
@@ -214,19 +216,6 @@ func (c *vncRemoton) handleTunnel(local net.Conn, remote net.Conn) {
 	}()
 
 	log.Println("vncRemoton: closing connections", <-errc)
-}
-
-func (c *vncRemoton) findFreePort() (string, int) {
-	startPort := 5900
-
-	for ; startPort < 65534; startPort++ {
-		conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(startPort))
-		if err != nil {
-			return strconv.Itoa(startPort), startPort
-		}
-		conn.Close()
-	}
-	return "", -1
 }
 
 func (c *vncRemoton) OnConnection(cb func(addr net.Addr)) {

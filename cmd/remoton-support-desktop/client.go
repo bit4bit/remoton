@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/rpc"
-	"strconv"
 	"strings"
 	"time"
 
@@ -138,7 +137,7 @@ func (c *tunnelRemoton) srvDirect(session *remoton.SessionClient,
 
 func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient,
 	password string) error {
-	port := c.findFreePort()
+	port, _ := common.FindFreePortTCP(55123)
 	addrSrv := "localhost:" + port
 	log.Println("listen at " + addrSrv)
 	listener, err := net.Listen("tcp", addrSrv)
@@ -191,19 +190,6 @@ func (c *tunnelRemoton) handle(local, remoto net.Conn) {
 	log.Error(<-errc)
 	local.Close()
 	remoto.Close()
-}
-
-func (c *tunnelRemoton) findFreePort() string {
-	startPort := 55123
-
-	for ; startPort < 65534; startPort++ {
-		conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(startPort))
-		if err != nil {
-			return strconv.Itoa(startPort)
-		}
-		conn.Close()
-	}
-	panic("cant find free port")
 }
 
 func (c *tunnelRemoton) Terminate() {

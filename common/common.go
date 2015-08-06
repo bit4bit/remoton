@@ -4,6 +4,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
+	"net"
+	"strconv"
 )
 
 var (
@@ -22,4 +24,16 @@ func GetRootCAFromFile(file string) (*x509.CertPool, error) {
 		return nil, ErrRootCertifcate
 	}
 	return roots, nil
+}
+
+func FindFreePortTCP(startPort int) (string, int) {
+
+	for ; startPort < 65534; startPort++ {
+		conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(startPort))
+		if err != nil {
+			return strconv.Itoa(startPort), startPort
+		}
+		conn.Close()
+	}
+	panic("cant find free port")
 }
