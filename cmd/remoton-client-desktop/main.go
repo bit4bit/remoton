@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -108,14 +109,32 @@ func main() {
 	authServerEntry.SetText("public")
 	controlBox.Add(authServerEntry)
 
-	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
+	var getCertFilename func() string
+
+	localCert := filepath.Join(filepath.Dir(os.Args[0]), "cert.pem")
+	if _, err := os.Stat(localCert); err == nil || os.IsExist(err) {
+		controlBox.Add(gtk.NewLabel("Cert local"))
+		getCertFilename = func() string {
+			return localCert
+		}
+	} else if os.Getenv("REMOTON_CERT_FILE") != "" {
+		controlBox.Add(gtk.NewLabel("Cert enviroment"))
+		getCertFilename = func() string {
+			return os.Getenv("REMOTON_CERT_FILE")
+		}
+	} else {
+		btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
+		getCertFilename = btnCert.GetFilename
+		controlBox.Add(btnCert)
+	}
+
 	btnSrv := gtk.NewButtonWithLabel("Start")
 	clremoton.VNC.OnConnection(func(addr net.Addr) {
 		statusbar.Push(contextID, "Someone connected")
 		log.Println("New connection from:" + addr.String())
 	})
 	btnSrv.Clicked(func() {
-		certPool, err := common.GetRootCAFromFile(btnCert.GetFilename())
+		certPool, err := common.GetRootCAFromFile(getCertFilename())
 		if err != nil {
 			dialogError(window, err)
 			return
@@ -149,7 +168,6 @@ func main() {
 		}
 
 	})
-	controlBox.Add(btnCert)
 	controlBox.Add(btnSrv)
 
 	//---
