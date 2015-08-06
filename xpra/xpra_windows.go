@@ -57,6 +57,9 @@ func Attach(addr, password string) error {
 func Bind(addr, password string) error {
 	var out bytes.Buffer
 
+	//BUG auth=file for xpra not work
+	//TODO --auth=file for xpra not work's so we omit and client-support
+	//always connect with server
 	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--mdns=no",
 		"--bind-tcp="+addr, "--auth=allow",
 		"--password-file="+generaPasswdFile(password))

@@ -3,6 +3,8 @@
 //
 //Environment Vars:
 //  * REMOTON_SERVER : set default remote server to connect
+
+//+build linux,windows
 package main
 
 import (

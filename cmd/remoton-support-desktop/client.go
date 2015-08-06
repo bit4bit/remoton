@@ -117,6 +117,13 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) e
 
 	}
 
+	//BUG --auth=file xpra not work, so we secure it over tunnel SSL
+	var clientOS string
+	rpcclient.Call("RemotonClient.GetOS", struct{}{}, &clientOS)
+	if clientOS == "windows" {
+		serverDirect = false
+	}
+
 	if serverDirect {
 		return c.srvDirect(session, clientExternalIP, password)
 	}
