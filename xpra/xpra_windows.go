@@ -45,8 +45,9 @@ func Version() string {
 //Attach to xpra server
 func Attach(addr, password string) error {
 	xpraCmd = exec.Command(pathXpraCmd, "attach", "tcp:"+addr, "--auth=file",
-		"--password-file="+generaPasswdFile(password),
+		"--password-file="+syscall.EscapeArg(generaPasswdFile(password)),
 		"--title=@title@", "--sharing=yes",
+		"--window-icon="+localIcon(), "--tray-icon="+localIcon(),
 	)
 	xpraCmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow: true,
@@ -67,7 +68,8 @@ func Bind(addr, password string) error {
 	//TODO --auth=file for xpra not work's so we omit and client-support
 	//always connect with server
 	xpraCmd = exec.Command(pathXpraCmd, "shadow", ":0", "--mdns=no",
-		"--bind-tcp="+addr, "--title=@title@", "--sharing=yes", "--auth=allow")
+		"--bind-tcp="+addr, "--title=@title@", "--sharing=yes", "--auth=allow",
+		"--window-icon="+localIcon(), "--tray-icon="+localIcon())
 	xpraCmd.Stdout = &out
 	xpraCmd.Stderr = &out
 	xpraCmd.SysProcAttr = &syscall.SysProcAttr{
@@ -141,4 +143,8 @@ func pathProgramFiles() string {
 	}
 	return os.Getenv("ProgramFiles")
 
+}
+
+func localIcon() string {
+	return syscall.EscapeArg(filepath.Join(filepath.Dir(os.Args[0]), "icon.ico"))
 }
