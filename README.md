@@ -76,6 +76,10 @@ we can use the GUI version, just run **remoton-client-desktop** or **remoton-sup
 The will need the **cert.pem** for connect to server.
 
 
+## TODO
+
+  * upnp/pmp only works on GNU/Linux, windows xpra --auth=file not work
+
 ## POWERED BY
 
   * [Go v1.4](http://golang.org/)
