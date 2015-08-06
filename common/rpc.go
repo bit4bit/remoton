@@ -34,11 +34,13 @@ func (c *RemotonClient) GetExternalPort(args struct{}, reply *int) error {
 	return nil
 }
 
+//GetOS of running system it's the same runtime.GOOS
 func (c *RemotonClient) GetOS(args struct{}, reply *string) error {
 	*reply = runtime.GOOS
 	return nil
 }
 
+//GetArch of running system it's the same runtime.GOARCH
 func (c *RemotonClient) GetArch(args struct{}, reply *string) error {
 	*reply = runtime.GOARCH
 	return nil
