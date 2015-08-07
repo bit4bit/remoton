@@ -69,7 +69,7 @@ func Attach(addr, password string) error {
 		return err
 	}
 
-	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr, "-z9",
+	xpraCmd = exec.Command(xpraPath, "attach", "tcp:"+addr, "-z1",
 		"--password-file="+generaPasswdFile(password), "--auth=file")
 
 	if err := xpraCmd.Start(); err != nil {
@@ -99,7 +99,7 @@ func Bind(addr, password string) error {
 
 	xpraCmd = exec.Command(xpraPath, "shadow", ":0",
 		"--daemon=no", "--mdns=no",
-		"--title=@title@", "--sharing=yes",
+		"--title=@title@", "--sharing=yes", "-z1",
 		"--bind-tcp="+addr, "--auth=file", "--password-file="+generaPasswdFile(password))
 	xpraCmd.Stderr = &out
 
