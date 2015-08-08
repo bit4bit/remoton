@@ -12,6 +12,15 @@ var (
 	ErrRootCertifcate = errors.New("invalid root certificate")
 )
 
+func GetServerInsecure(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return ""
+	}
+	iport, _ := strconv.Atoi(port)
+	return net.JoinHostPort(host, strconv.Itoa(iport-1))
+}
+
 func GetRootCAFromFile(file string) (*x509.CertPool, error) {
 	roots := x509.NewCertPool()
 	rootPEM, err := ioutil.ReadFile(file)

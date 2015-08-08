@@ -44,7 +44,6 @@ func (c *chatRemoton) handle() {
 
 	for {
 		buf := make([]byte, 32*512)
-		log.Println("waiting")
 		rlen, err := c.conn.Read(buf)
 		if err != nil {
 			log.Error(err)
@@ -75,9 +74,14 @@ func (c *chatRemoton) Terminate() {
 
 type tunnelRemoton struct {
 	listener net.Listener
+	xpraSrv  *xpra.Xpra
 }
 
 func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) error {
+	if c.xpraSrv == nil {
+		c.xpraSrv = &xpra.Xpra{}
+	}
+	c.xpraSrv.SetPassword(password)
 
 	rpconn, err := session.Dial("rpc")
 	if err != nil {
@@ -93,9 +97,9 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) e
 	if err != nil {
 		return err
 	}
-	if !strings.EqualFold(capsClient.XpraVersion, xpra.Version()) {
+	if !strings.EqualFold(capsClient.XpraVersion, c.xpraSrv.Version()) {
 		return fmt.Errorf("mismatch xpra version was %s expected %s",
-			capsClient.XpraVersion, xpra.Version())
+			capsClient.XpraVersion, c.xpraSrv.Version())
 	}
 
 	serverDirect := false
@@ -125,25 +129,23 @@ func (c *tunnelRemoton) Start(session *remoton.SessionClient, password string) e
 	}
 
 	if serverDirect {
-		return c.srvDirect(session, clientExternalIP, password)
+		return c.srvDirect(session, clientExternalIP)
 	}
-	return c.srvTunnel(session, password)
+	return c.srvTunnel(session)
 }
 
 func (c *tunnelRemoton) srvDirect(session *remoton.SessionClient,
-	externalIP net.IP, password string) error {
+	externalIP net.IP) error {
 	log.Println("direct connection")
 
-	err := xpra.Attach(net.JoinHostPort(externalIP.String(), "9932"),
-		password)
+	err := c.xpraSrv.Attach(net.JoinHostPort(externalIP.String(), "9932"))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient,
-	password string) error {
+func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient) error {
 	port, _ := common.FindFreePortTCP(55123)
 	addrSrv := "localhost:" + port
 	log.Println("listen at " + addrSrv)
@@ -173,7 +175,7 @@ func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient,
 		}
 	}(listener)
 
-	err = xpra.Attach(addrSrv, password)
+	err = c.xpraSrv.Attach(addrSrv)
 	if err != nil {
 		listener.Close()
 		return err
@@ -203,5 +205,7 @@ func (c *tunnelRemoton) Terminate() {
 	if c.listener != nil {
 		c.listener.Close()
 	}
-	xpra.Terminate()
+	if c.xpraSrv != nil {
+		c.xpraSrv.Terminate()
+	}
 }

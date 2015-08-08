@@ -110,7 +110,11 @@ func potentialGateways() (gws []net.IP) {
 	if err != nil {
 		return nil
 	}
+
 	for _, iface := range ifaces {
+		if iface.Flags == net.FlagLoopback {
+			continue
+		}
 		ifaddrs, err := iface.Addrs()
 		if err != nil {
 			return gws

@@ -97,10 +97,11 @@ type vncRemoton struct {
 	onConnection func(net.Addr)
 	natif        nat.Interface
 	iport        int
+	xpra         *xpra.Xpra
 }
 
 func newVncRemoton() *vncRemoton {
-	return &vncRemoton{}
+	return &vncRemoton{xpra: &xpra.Xpra{}}
 }
 
 //Start vnc server now it's xpra and connect to server
@@ -110,24 +111,24 @@ func (c *vncRemoton) Start(session *remoton.SessionClient, password string) erro
 	port, c.iport = common.FindFreePortTCP(6900)
 
 	addrSrv := net.JoinHostPort("0.0.0.0", port)
-
-	err = xpra.Bind(addrSrv, password)
+	c.xpra.SetPassword(password)
+	err = c.xpra.Bind(addrSrv)
 	if err != nil {
 		log.Error("vncRemoton:", err)
 		return err
 	}
 	conn, err := net.DialTimeout("tcp", "localhost:"+port, time.Second*3)
 	if err != nil {
-		xpra.Terminate()
+		c.xpra.Terminate()
 		return err
 	}
 	conn.Close()
 	log.Println("started xpra")
 
-	go c.startNat(addrSrv)
+	c.startNat(addrSrv)
 	go c.startRPC(
 		common.Capabilities{
-			XpraVersion: xpra.Version(),
+			XpraVersion: c.xpra.Version(),
 		},
 		session,
 		addrSrv)
@@ -227,7 +228,7 @@ func (c *vncRemoton) Stop() {
 		c.conn.Close()
 	}
 	c.stopNat()
-	xpra.Terminate()
+	c.xpra.Terminate()
 }
 
 type clientRemoton struct {

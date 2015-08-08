@@ -75,6 +75,9 @@ func (n *upnp) internalAddress() (net.IP, error) {
 		return nil, err
 	}
 	for _, iface := range ifaces {
+		if iface.Flags == net.FlagLoopback {
+			continue
+		}
 		addrs, err := iface.Addrs()
 		if err != nil {
 			return nil, err
@@ -101,6 +104,7 @@ func (n *upnp) String() string {
 
 // discoverUPnP searches for Internet Gateway Devices
 // and returns the first one it can find on the local network.
+//BUG when only lo0 active, block forever
 func discoverUPnP() Interface {
 	found := make(chan *upnp, 2)
 	// IGDv1
@@ -124,6 +128,10 @@ func discoverUPnP() Interface {
 			return &upnp{dev, "IGDv2-PPP1", &internetgateway2.WANPPPConnection1{sc}}
 		}
 		return nil
+	})
+	//FIX
+	time.AfterFunc(time.Second*3, func() {
+		close(found)
 	})
 	for i := 0; i < cap(found); i++ {
 		if c := <-found; c != nil {

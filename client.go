@@ -155,7 +155,12 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 		return nil, err
 	}
 
-	conn, err := tls.Dial("tcp", burl.Host, c.TLSConfig)
+	var conn net.Conn
+	if burl.Scheme == "https" {
+		conn, err = tls.Dial("tcp", burl.Host, c.TLSConfig)
+	} else {
+		conn, err = net.Dial("tcp", burl.Host)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +195,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 func (c *SessionClient) dialWebsocket(service string, action string) (*websocket.Conn, error) {
 	var origin string
 	var wsurl string
+	useTls := false
 
 	if c.Origin == "" {
 		origin = "http://localhost"
@@ -202,8 +208,13 @@ func (c *SessionClient) dialWebsocket(service string, action string) (*websocket
 		if err != nil {
 			return nil, err
 		}
+		if burl.Scheme == "https" {
+			burl.Scheme = "wss"
+			useTls = true
+		} else {
+			burl.Scheme = "ws"
+		}
 
-		burl.Scheme = "wss"
 		wsurl = burl.String()
 	} else {
 		wsurl = c.WSURL
@@ -219,8 +230,9 @@ func (c *SessionClient) dialWebsocket(service string, action string) (*websocket
 	)
 
 	//TODO use root cert
-	conf.TlsConfig = c.TLSConfig
-
+	if useTls {
+		conf.TlsConfig = c.TLSConfig
+	}
 	wsconn, err := websocket.DialConfig(conf)
 	if err != nil {
 		return nil, err
