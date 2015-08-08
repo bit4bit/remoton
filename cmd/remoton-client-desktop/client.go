@@ -97,6 +97,8 @@ type vncRemoton struct {
 	onConnection func(net.Addr)
 	natif        nat.Interface
 	iport        int
+	eport        int
+	elistener    net.Listener //external listener for public access
 	xpra         *xpra.Xpra
 }
 
@@ -110,14 +112,14 @@ func (c *vncRemoton) Start(session *remoton.SessionClient, password string) erro
 	var port string
 	port, c.iport = common.FindFreePortTCP(6900)
 
-	addrSrv := net.JoinHostPort("0.0.0.0", port)
+	addrSrv := net.JoinHostPort("localhost", port)
 	c.xpra.SetPassword(password)
 	err = c.xpra.Bind(addrSrv)
 	if err != nil {
 		log.Error("vncRemoton:", err)
 		return err
 	}
-	conn, err := net.DialTimeout("tcp", "localhost:"+port, time.Second*3)
+	conn, err := net.DialTimeout("tcp", addrSrv, time.Second*3)
 	if err != nil {
 		c.xpra.Terminate()
 		return err
@@ -132,14 +134,15 @@ func (c *vncRemoton) Start(session *remoton.SessionClient, password string) erro
 		},
 		session,
 		addrSrv)
-	go c.start(session, "localhost:"+port)
+	go c.start(session, addrSrv)
 	return nil
 }
 
 //startNat add support for nat
 func (c *vncRemoton) startNat(addrSrv string) error {
 	var err error
-
+	var eport string
+	eport, c.eport = common.FindFreePortTCP(44442)
 	c.natif, err = nat.Parse("any")
 	if err != nil {
 		log.Error(err)
@@ -150,23 +153,57 @@ func (c *vncRemoton) startNat(addrSrv string) error {
 		return err
 	}
 
-	if err = c.natif.DeleteMapping("TCP", 9932, c.iport); err != nil {
+	if err = c.natif.DeleteMapping("TCP", 9932, c.eport); err != nil {
 		log.Infof("can't delete external map: %s", err.Error())
 	}
 
-	if err = c.natif.AddMapping("TCP", 9932, c.iport, "remoton", time.Hour); err != nil {
-		log.Infof("can't add mapping external map: %d -> %d", 9932, c.iport)
+	if err = c.natif.AddMapping("TCP", 9932, c.eport, "remoton", time.Hour); err != nil {
+		log.Infof("can't add mapping external map: %d -> %d", 9932, c.eport)
 		return err
 	}
+
+	c.elistener, err = net.Listen("tcp", net.JoinHostPort("0.0.0.0", eport))
+	if err != nil {
+		return err
+	}
+
+	//redict from public to localhost
+	go func() {
+		eip, err := c.natif.ExternalIP()
+		if err != nil {
+			return
+		}
+
+		for {
+			conn, err := c.elistener.Accept()
+			if err != nil {
+				break
+			}
+			//only allow frow gateway
+			if !strings.EqualFold(conn.RemoteAddr().String(), eip.String()) {
+				conn.Close()
+				continue
+			}
+			proxy, err := net.DialTimeout("tcp", addrSrv, time.Second)
+			if err != nil {
+				break
+			}
+			go io.Copy(conn, proxy)
+			go io.Copy(proxy, conn)
+		}
+	}()
 
 	return nil
 }
 
 func (c *vncRemoton) stopNat() {
 	if c.natif != nil {
-		if err := c.natif.DeleteMapping("TCP", 9932, c.iport); err != nil {
+		if err := c.natif.DeleteMapping("TCP", 9932, c.eport); err != nil {
 			log.Infof("can't delete external map: %s", err.Error())
 		}
+	}
+	if c.elistener != nil {
+		c.elistener.Close()
 	}
 }
 
