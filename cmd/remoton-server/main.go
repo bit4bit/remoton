@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
 
 	"github.com/bit4bit/remoton"
 
@@ -17,13 +19,11 @@ import (
 )
 
 var (
-	listenAddr         = flag.String("listen", "localhost:9934", "listen address")
-	listenAddrInsecure = flag.String("listen-insecure", "localhost:9933",
-		"listen addres insecure")
-	authToken = flag.String("auth-token", "", "authenticate API")
-	certFile  = flag.String("cert", "cert.pem", "cert pem")
-	keyFile   = flag.String("key", "key.pem", "key pem")
-	profile   = flag.String("cpuprofile", "", "output profile to file")
+	listenAddr = flag.String("listen", "localhost:9934", "listen address")
+	authToken  = flag.String("auth-token", "", "authenticate API")
+	certFile   = flag.String("cert", "cert.pem", "cert pem")
+	keyFile    = flag.String("key", "key.pem", "key pem")
+	profile    = flag.String("cpuprofile", "", "output profile to file")
 )
 
 func main() {
@@ -64,9 +64,20 @@ func main() {
 		Addr:    *listenAddr,
 		Handler: th.Throttle(mux),
 	}
+	host, port, err := net.SplitHostPort(*listenAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	iport, err := strconv.Atoi(port)
+	if err != nil {
+		panic(err)
+	}
 
+	listenInsecureAddr := net.JoinHostPort(host, strconv.Itoa(iport-1))
+	//Default insecure it's a previous port
+	log.Println("Listen at HTTP ", listenInsecureAddr)
 	sInsecure := &http.Server{
-		Addr:    *listenAddrInsecure,
+		Addr:    listenInsecureAddr,
 		Handler: th.Throttle(mux),
 	}
 	go sInsecure.ListenAndServe()
