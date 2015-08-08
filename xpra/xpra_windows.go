@@ -3,25 +3,23 @@
 package xpra
 
 import (
-	"bytes"
-	"errors"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
-	"runtime"
-	"strings"
 	"syscall"
-	"time"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 func init() {
 	xpraPath = path.Join(filepath.Dir(os.Args[0]), "Xpra", "xpra_cmd.exe")
 	if _, err := os.Stat(xpraPath); err != nil && os.IsNotExist(err) {
 		xpraPathErr = ErrNotXPRA
+	}
+}
+
+func platformCmd(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow: true,
 	}
 }
 

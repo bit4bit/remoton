@@ -87,6 +87,7 @@ func (c *Xpra) Attach(addr string) error {
 	args = platformAttachArgs(args)
 
 	xpraCmd := exec.Command(xpraPath, args...)
+	platformCmd(xpraCmd)
 	if err := xpraCmd.Start(); err != nil {
 		log.Error("xpra_attach:", err)
 		return err
@@ -112,6 +113,8 @@ func (c *Xpra) Bind(addr string) error {
 	args = platformBindArgs(args)
 
 	xpraCmd := exec.Command(xpraPath, args...)
+	platformCmd(xpraCmd)
+
 	xpraCmd.Stderr = &out
 	xpraCmd.Stdout = &out
 	if err := xpraCmd.Start(); err != nil {

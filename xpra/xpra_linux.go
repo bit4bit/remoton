@@ -20,3 +20,7 @@ func platformAttachArgs(args []string) []string {
 func platformBindArgs(args []string) []string {
 	return append(args, "--daemon=no")
 }
+
+func platformCmd(cmd *exec.Cmd) {
+
+}
