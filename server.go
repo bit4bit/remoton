@@ -47,15 +47,14 @@ type Server struct {
 	idGenerator func() string
 }
 
-//NewServer create a new connection it't interface http.Handler
-//can handle with http.ListenAndServer
-func NewServer(authToken string, idGenerator func() string) *Server {
+//NewServer create a new http.Listener, *authFunc* for custom authentication and
+//idGenerator for identify connections
+func NewServer(authFunc func(authToken string, r *http.Request) bool, idGenerator func() string) *Server {
 	r := &Server{httprouter.New(), NewSessionManager(), idGenerator}
 	r.RedirectFixedPath = false
 
-	r.POST("/session", hAuth(authToken, r.hNewSession))
-	//DELETE active session this not close active connections
-	r.DELETE("/session/:id", hAuth(authToken, r.hDestroySession))
+	r.POST("/session", hAuth(authFunc, r.hNewSession))
+	r.DELETE("/session/:id", hAuth(authFunc, r.hDestroySession))
 	r.GET("/session/:id/conn/:service/dial/:tunnel", r.hSessionDial)
 	r.GET("/session/:id/conn/:service/listen/:tunnel", r.hSessionListen)
 
@@ -139,13 +138,12 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func hAuth(authToken string, handler httprouter.Handle) httprouter.Handle {
+func hAuth(authTokenFunc func(authToken string, r *http.Request) bool, handler httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		if r.Header.Get("X-Auth-Token") != authToken {
+		if !authTokenFunc(r.Header.Get("X-Auth-Token"), r) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
 		handler(w, r, params)
 	}
 }

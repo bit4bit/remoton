@@ -19,11 +19,11 @@ import (
 )
 
 var (
-	listenAddr = flag.String("listen", "localhost:9934", "listen address")
-	authToken  = flag.String("auth-token", "", "authenticate API")
-	certFile   = flag.String("cert", "cert.pem", "cert pem")
-	keyFile    = flag.String("key", "key.pem", "key pem")
-	profile    = flag.String("cpuprofile", "", "output profile to file")
+	listenAddr    = flag.String("listen", "localhost:9934", "listen address")
+	authTokenFlag = flag.String("auth-token", "", "authenticate API")
+	certFile      = flag.String("cert", "cert.pem", "cert pem")
+	keyFile       = flag.String("key", "key.pem", "key pem")
+	profile       = flag.String("cpuprofile", "", "output profile to file")
 )
 
 func main() {
@@ -40,9 +40,9 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *authToken == "" {
-		*authToken = "public"
-		log.Println("Using default Token", *authToken)
+	if *authTokenFlag == "" {
+		*authTokenFlag = "public"
+		log.Println("Using default Token", *authTokenFlag)
 	}
 
 	if *certFile == "" || *keyFile == "" {
@@ -55,7 +55,9 @@ func main() {
 	)
 	mux := http.NewServeMux()
 	mux.Handle("/remoton/", http.StripPrefix("/remoton",
-		remoton.NewServer(*authToken, func() string {
+		remoton.NewServer(func(authToken string, r *http.Request) bool {
+			return authToken == *authTokenFlag
+		}, func() string {
 			return uuid.New()[0:8]
 		})))
 
