@@ -80,7 +80,8 @@ func (c *Xpra) Attach(addr string) error {
 
 	c.addrAttach = addr
 	args := append(xpraArgsAttach, "tcp:"+addr)
-
+	args = append(args, "--min-speed=30", "--min-quality=50",
+		"--notifications=no", "--speaker=off", "--auto-refresh-delay=0.8")
 	if c.passwordFile != "" {
 		args = append(args, "--auth=file", "--password-file="+c.passwordFile)
 	}
@@ -106,6 +107,7 @@ func (c *Xpra) Bind(addr string) error {
 
 	var out bytes.Buffer
 	args := append(xpraArgsBind, "--bind-tcp="+addr)
+	args = append(args, "--notifications=no", "--speaker=off")
 	if c.passwordFile != "" {
 		args = append(args, "--auth=file", "--password-file="+c.passwordFile)
 	}

@@ -130,9 +130,6 @@ func main() {
 	}
 	controlBox.Add(serverEntry)
 
-	serverInsecureCheck := gtk.NewCheckButtonWithLabel("Insecure")
-	controlBox.Add(serverInsecureCheck)
-
 	btnCert := gtk.NewFileChooserButton("Cert", gtk.FILE_CHOOSER_ACTION_OPEN)
 	controlBox.Add(btnCert)
 	btn := gtk.NewButtonWithLabel("Connect")
@@ -150,10 +147,6 @@ func main() {
 			ID:     machineIDEntry.GetText(),
 			APIURL: "https://" + serverEntry.GetText()}
 
-		sessionInsecure := &remoton.SessionClient{Client: rclient,
-			ID:     machineIDEntry.GetText(),
-			APIURL: "http://" + common.GetServerInsecure(serverEntry.GetText())}
-
 		if !started {
 			err := chatSrv.Start(session)
 			if err != nil {
@@ -161,12 +154,8 @@ func main() {
 				return
 			}
 
-			if serverInsecureCheck.GetActive() {
-				log.Warn("!!!doing tunnel insecure")
-				err = tunnelSrv.Start(sessionInsecure, machineAuthEntry.GetText())
-			} else {
-				err = tunnelSrv.Start(session, machineAuthEntry.GetText())
-			}
+			err = tunnelSrv.Start(session, machineAuthEntry.GetText())
+
 			if err != nil {
 				dialogError(btn.GetTopLevelAsWindow(), err)
 				return
