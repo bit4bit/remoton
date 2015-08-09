@@ -13,7 +13,7 @@ Commands
 
 ## Release
 
-from....
+See [Releases](https://github.com/bit4bit/remoton/releases/)
 
 ## Install from source
 
@@ -88,3 +88,10 @@ The will need the **cert.pem** for connect to server.
   * [Log](github.com/Sirupsen/logrus)
   * [HttpRouter](github.com/julienschmidt/httprouter)
   * [Websocket](golang.org/x/net/websocket)
+
+# Library
+
+Remoton it's a library for building tunnels.
+See [Doc](http://godoc.org/github.com/bit4bit/remoton)
+
+  * Now only support Websocket -Binary- and TCP.
