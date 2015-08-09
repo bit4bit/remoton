@@ -18,7 +18,7 @@ func platformAttachArgs(args []string) []string {
 }
 
 func platformBindArgs(args []string) []string {
-	return append(args, "--daemon=no")
+	return append(args, "--daemon=no", "--notifications=no", "--speaker=off")
 }
 
 func platformCmd(cmd *exec.Cmd) {

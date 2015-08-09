@@ -127,7 +127,7 @@ func (c *vncRemoton) Start(session *remoton.SessionClient, password string) erro
 	conn.Close()
 	log.Println("started xpra")
 
-	c.startNat(addrSrv)
+	go c.startNat(addrSrv)
 	go c.startRPC(
 		common.Capabilities{
 			XpraVersion: c.xpra.Version(),
@@ -166,7 +166,7 @@ func (c *vncRemoton) startNat(addrSrv string) error {
 	if err != nil {
 		return err
 	}
-
+	log.Println("Nat enabled")
 	//redict from public to localhost
 	go func() {
 		eip, err := c.natif.ExternalIP()
@@ -264,7 +264,7 @@ func (c *vncRemoton) Stop() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
-	c.stopNat()
+	go c.stopNat()
 	c.xpra.Terminate()
 }
 

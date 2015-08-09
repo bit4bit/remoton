@@ -15,6 +15,7 @@ func init() {
 	if _, err := os.Stat(xpraPath); err != nil && os.IsNotExist(err) {
 		xpraPathErr = ErrNotXPRA
 	}
+	println(localIcon())
 }
 
 func platformCmd(cmd *exec.Cmd) {
@@ -24,19 +25,20 @@ func platformCmd(cmd *exec.Cmd) {
 }
 
 func platformAttachArgs(args []string) []string {
-	return args
+	return append(args, "--window-icon="+localIcon(), "--tray-icon="+localIcon())
 }
 
 func platformBindArgs(args []string) []string {
 	//BUG xpra on windows not work auth=file
 	for idx, arg := range args {
 		if arg == "--auth=file" {
-			args[idx] = ""
+			args = append(args[:idx], args[idx+1:]...)
+			break
 		}
 	}
 	return args
 }
 
 func localIcon() string {
-	return syscall.EscapeArg(filepath.Join(filepath.Dir(os.Args[0]), "icon.ico"))
+	return filepath.Join(filepath.Dir(os.Args[0]), "icon.ico")
 }

@@ -28,11 +28,11 @@ var (
 
 var (
 	xpraArgsAttach = []string{
-		"attach", "-z1",
+		"attach",
 	}
 
 	xpraArgsBind = []string{
-		"shadow", ":0", "--mdns=no", "-z1",
+		"shadow", ":0", "--mdns=no",
 	}
 )
 
@@ -81,7 +81,9 @@ func (c *Xpra) Attach(addr string) error {
 	c.addrAttach = addr
 	args := append(xpraArgsAttach, "tcp:"+addr)
 	args = append(args, "--min-speed=30", "--min-quality=50",
-		"--notifications=no", "--speaker=off", "--auto-refresh-delay=0.8")
+		"--windows=yes",
+		"--notifications=no", "--speaker=off", "--auto-refresh-delay=0.8",
+		"--scaling=80")
 	if c.passwordFile != "" {
 		args = append(args, "--auth=file", "--password-file="+c.passwordFile)
 	}
@@ -107,13 +109,12 @@ func (c *Xpra) Bind(addr string) error {
 
 	var out bytes.Buffer
 	args := append(xpraArgsBind, "--bind-tcp="+addr)
-	args = append(args, "--notifications=no", "--speaker=off")
 	if c.passwordFile != "" {
 		args = append(args, "--auth=file", "--password-file="+c.passwordFile)
 	}
 	c.addrBind = addr
 	args = platformBindArgs(args)
-
+	log.Println("XpraBind args: ", args)
 	xpraCmd := exec.Command(xpraPath, args...)
 	platformCmd(xpraCmd)
 
@@ -129,7 +130,7 @@ func (c *Xpra) Bind(addr string) error {
 	xprayClosing := regexp.MustCompile("closing tcp socket localhost")
 	for {
 		time.Sleep(time.Second)
-
+		log.Println(out.String())
 		if xprayReady.Match(out.Bytes()) {
 			return nil
 		}
@@ -159,7 +160,7 @@ func (c *Xpra) Terminate() {
 		if c.passwordFile != "" {
 			args = append(args, "--password-file="+c.passwordFile)
 		}
-		exec.Command(xpraPath, args...).Run()
+		exec.Command(xpraPath, args...).Start()
 		syscall.Unlink(c.passwordFile)
 	}
 }
