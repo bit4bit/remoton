@@ -5,13 +5,16 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/pierrec/lz4"
-	"golang.org/x/net/websocket"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"runtime"
 	"time"
+
+	jswebsocket "github.com/gopherjs/websocket"
+	"github.com/pierrec/lz4"
+	"golang.org/x/net/websocket"
 )
 
 type ErrHTTP struct {
@@ -23,12 +26,15 @@ func (c ErrHTTP) Error() string {
 	return c.Msg
 }
 
+//Client allow creation of sessions
 type Client struct {
 	Prefix    string
 	TLSConfig *tls.Config
 	Origin    string
 }
 
+//SessionClient it's a session where we can create Services a services it's
+//a connection -net.Conn-
 type SessionClient struct {
 	*Client
 
@@ -49,10 +55,12 @@ type SessionListen struct {
 	service string
 }
 
+//Accept implements the net.Accept for Websocket
 func (c *SessionListen) Accept() (net.Conn, error) {
 	return c.dialWebsocket(c.service, "/listen")
 }
 
+//Accept implements the net.Accept for TCP
 func (c *SessionListen) AcceptTCP() (net.Conn, error) {
 	return c.dialTCP(c.service, "/listen")
 }
@@ -85,10 +93,7 @@ func (c *SessionListenTCP) Addr() net.Addr {
 	return nil
 }
 
-func (c *Client) Session(id string, authToken string) *SessionClient {
-	return &SessionClient{Client: c, ID: id, authToken: authToken}
-}
-
+//NewSession create a session on server
 func (c *Client) NewSession(_url string, authToken string) (*SessionClient, error) {
 
 	hclient := &http.Client{
@@ -120,24 +125,32 @@ func (c *Client) NewSession(_url string, authToken string) (*SessionClient, erro
 	return session, nil
 }
 
+//Destroy the current session this not close active connections
 func (c *SessionClient) Destroy() {
 	req, _ := http.NewRequest("DELETE", c.APIURL+"/session/"+c.ID, nil)
 	req.Header.Set("X-Auth-Session", c.authToken)
 	c.hclient.Do(req)
 }
 
+//Dial create a new *service* -net.Conn- Websocket
 func (c *SessionClient) Dial(service string) (net.Conn, error) {
+	if runtime.GOARCH == "js" {
+		return c.dialWebsocketJS(service, "/dial")
+	}
 	return c.dialWebsocket(service, "/dial")
 }
 
+//Dial create  a new *service* -net.Conn- TCP
 func (c *SessionClient) DialTCP(service string) (net.Conn, error) {
 	return c.dialTCP(service, "/dial")
 }
 
+//Listen implementes net.Listener for Websocket connections
 func (c *SessionClient) Listen(service string) net.Listener {
 	return &SessionListen{c, service}
 }
 
+//Listen implementes net.Listener for TCP connections
 func (c *SessionClient) ListenTCP(service string) net.Listener {
 	return &SessionListenTCP{c, service}
 }
@@ -190,6 +203,33 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 	}
 
 	return conn, nil
+}
+
+func (c *SessionClient) dialWebsocketJS(service string, action string) (net.Conn, error) {
+	var wsurl string
+
+	if c.WSURL == "" {
+		burl, err := url.Parse(c.APIURL)
+		if err != nil {
+			return nil, err
+		}
+		if burl.Scheme == "https" {
+			burl.Scheme = "wss"
+		} else {
+			burl.Scheme = "ws"
+		}
+
+		wsurl = burl.String()
+	} else {
+		wsurl = c.WSURL
+	}
+
+	wsurl += fmt.Sprintf(c.Prefix+"/session/%s/conn/%s%s/websocket",
+		c.ID,
+		service,
+		action)
+
+	return jswebsocket.Dial(wsurl)
 }
 
 func (c *SessionClient) dialWebsocket(service string, action string) (*websocket.Conn, error) {
