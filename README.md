@@ -10,6 +10,13 @@ Commands
   * `remoton-client-desktop` GUI version for sharing desktop
   * `remoton-support-desktop` GUI version for handling remote desktop
 
+## Help
+
+Email me bit4bit@riseup.net
+
+## Contributing
+
+What ever you like
 
 ## Release
 
