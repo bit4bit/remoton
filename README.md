@@ -4,6 +4,8 @@
 
 (Go) Own remote desktop multi-platform
 
+**Remoton desktop** it's proof concept of **Remoton Library**
+
 Commands
   * `remoton-server-cert` generate certificates for secure connections
   * `remoton-server` handle connections between clients and supports
@@ -91,7 +93,59 @@ The will need the **cert.pem** for connect to server.
 
 # Library
 
-Remoton it's a library for building tunnels.
+Remoton it's a library for building programmatically tunnels.
 See [Doc](http://godoc.org/github.com/bit4bit/remoton)
 
   * Now only support Websocket -Binary- and TCP.
+
+## Listener
+
+You can listen inbound connections on remoton server
+~~~go
+	import "github.com/bit4bit/remoton"
+	....
+	
+	
+	rclient := remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{
+		InsecureSkipVerify: true,
+	}}
+	session, err := rclient.NewSession("https://miserver.com:9934", "public")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer session.Destroy()
+	
+	//now can create a listener for every service you want
+	//example
+	listener := session.Listen("chat")
+	go func(){
+		 for {
+			conn, err := listener.Accept()
+			//now you use conn -net.Conn-
+		 }
+	}()
+	
+	listener = session.Listen("rpc")
+	//or use it example RPC
+	srvRpc := rpc.NewServer()
+	srvRpc.Register(&Api)
+	go srvRpc.Accept(listener)
+~~~
+
+## Dial
+
+You can dial a active session.
+~~~go
+    import "github.com/bit4bit/remoton"
+
+	rclient := remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{
+		InsecureSkipVerify: true,
+	}}
+	session := &remoton.SessionClient{Client: rclient,
+		ID: "misessionid", AuthToken: "mitoken",
+		APIURL: "https://miserver.com:9934"}
+	
+	//now you can dial any service
+	conn, err := session.Dial("chat")
+	//use conn -net.Conn-
+~~~
