@@ -12,6 +12,13 @@ Commands
   * `remoton-client-desktop` GUI version for sharing desktop
   * `remoton-support-desktop` GUI version for handling remote desktop
 
+## Help
+
+Email me bit4bit@riseup.net
+
+## Contributing
+
+What ever you like
 
 ## Release
 
@@ -97,6 +104,7 @@ Remoton it's a library for building programmatically tunnels.
 See [Doc](http://godoc.org/github.com/bit4bit/remoton)
 
   * Now only support Websocket -Binary- and TCP.
+
 
 ## Listener
 
