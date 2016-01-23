@@ -30,17 +30,9 @@ func (c *srvSession) initService(id string) {
 	}
 }
 
-func (c *srvSession) ListenService(id string) <-chan net.Conn {
+func (c *srvSession) Service(id string) chan net.Conn {
 	c.initService(id)
 	return c.service[id]
-}
-
-func (c *srvSession) DialService(id string) net.Conn {
-	c.initService(id)
-
-	listen, dial := net.Pipe()
-	c.service[id] <- listen
-	return dial
 }
 
 //SessionManager handle sessions

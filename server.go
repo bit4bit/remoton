@@ -11,6 +11,7 @@ import (
 
 const (
 	timeoutDefaultListen = time.Minute * 20
+	timeoutDefaultDial   = time.Minute * 3
 )
 
 type requestTunnel struct {
@@ -103,10 +104,17 @@ func (c *Server) hSessionDial(w http.ResponseWriter, r *http.Request, params htt
 
 	kservice := params.ByName("service")
 	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
-		tunnel := session.DialService(kservice)
-		defer tunnel.Close()
-		trans(tunnel).ServeHTTP(w, r)
-		return
+		listen, tunnel := net.Pipe()
+		service := session.Service(kservice)
+		select {
+		case service <- listen:
+			defer tunnel.Close()
+			trans(tunnel).ServeHTTP(w, r)
+			return
+		case <-time.After(timeoutDefaultDial):
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusInternalServerError)
@@ -122,7 +130,7 @@ func (c *Server) hSessionListen(w http.ResponseWriter, r *http.Request, params h
 	kservice := params.ByName("service")
 
 	if trans, ok := tunnelTypes[params.ByName("tunnel")]; ok {
-		chtunnel := session.ListenService(kservice)
+		chtunnel := session.Service(kservice)
 		select {
 		case tunnel := <-chtunnel:
 			defer tunnel.Close()
