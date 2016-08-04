@@ -83,7 +83,7 @@ func (c *Xpra) Attach(addr string) error {
 	args = append(args, "--min-speed=30", "--min-quality=50",
 		"--windows=yes",
 		"--notifications=no", "--speaker=off", "--auto-refresh-delay=0.8",
-		"--scaling=80")
+		"--desktop-scaling=auto")
 	if c.passwordFile != "" {
 		args = append(args, "--auth=file", "--password-file="+c.passwordFile)
 	}
