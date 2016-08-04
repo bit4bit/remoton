@@ -14,8 +14,8 @@ import (
 	
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/throttled/throttled"
-	"github.com/throttled/throttled/store"
+	"gopkg.in/throttled/throttled.v2"
+	"gopkg.in/throttled/throttled.v2/store"
 )
 
 var (
