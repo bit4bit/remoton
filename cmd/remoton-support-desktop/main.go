@@ -8,6 +8,7 @@
 package main
 
 import (
+	"flag"
 	"crypto/tls"
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
@@ -27,9 +28,12 @@ var (
 	rclient   *remoton.Client
 	chatSrv   = &chatRemoton{}
 	tunnelSrv = &tunnelRemoton{}
+	insecure = flag.Bool("insecure", false, "insecure tls")
 )
 
 func main() {
+	flag.Parse()
+	
 	common.SetDefaultGtkTheme()
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -142,7 +146,9 @@ func main() {
 		}
 
 		rclient.TLSConfig.RootCAs = certPool
-
+		if *insecure {
+			rclient.TLSConfig.InsecureSkipVerify = true
+		}
 		session := &remoton.SessionClient{Client: rclient,
 			ID:     machineIDEntry.GetText(),
 			APIURL: "https://" + serverEntry.GetText()}
