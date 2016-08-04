@@ -174,7 +174,8 @@ func (c *tunnelRemoton) srvTunnel(session *remoton.SessionClient) error {
 			go c.handle(conn, remote)
 		}
 	}(listener)
-
+	
+	log.Println("Xpra " + c.xpraSrv.Version() + " attaching to " + addrSrv)
 	err = c.xpraSrv.Attach(addrSrv)
 	if err != nil {
 		listener.Close()

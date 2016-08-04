@@ -138,15 +138,17 @@ func main() {
 		log.Println("New connection from:" + addr.String())
 	})
 	btnSrv.Clicked(func() {
-		certPool, err := common.GetRootCAFromFile(getCertFilename())
-		if err != nil {
-			dialogError(window, err)
-			return
-		}
-		clremoton.SetCertPool(certPool)
 		if *insecure {
 			clremoton.SetInsecure()
+		} else {
+			certPool, err := common.GetRootCAFromFile(getCertFilename())
+			if err != nil {
+				dialogError(window, err)
+				return
+			}
+			clremoton.SetCertPool(certPool)
 		}
+
 		if !clremoton.Started() {
 			log.Println("starting remoton")
 			machinePassword = uuid.New()[:4]

@@ -139,16 +139,17 @@ func main() {
 	btn := gtk.NewButtonWithLabel("Connect")
 	started := false
 	btn.Clicked(func() {
-		certPool, err := common.GetRootCAFromFile(btnCert.GetFilename())
-		if err != nil {
-			dialogError(window, err)
-			return
-		}
-
-		rclient.TLSConfig.RootCAs = certPool
 		if *insecure {
 			rclient.TLSConfig.InsecureSkipVerify = true
+		} else {
+			certPool, err := common.GetRootCAFromFile(btnCert.GetFilename())
+			if err != nil {
+				dialogError(window, err)
+				return
+			}
+			rclient.TLSConfig.RootCAs = certPool
 		}
+
 		session := &remoton.SessionClient{Client: rclient,
 			ID:     machineIDEntry.GetText(),
 			APIURL: "https://" + serverEntry.GetText()}
