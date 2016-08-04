@@ -10,8 +10,8 @@ import (
 	"strconv"
 
 	"github.com/bit4bit/remoton"
-
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/satori/go.uuid"
+	
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/throttled/throttled"
@@ -58,7 +58,7 @@ func main() {
 		remoton.NewServer(func(authToken string, r *http.Request) bool {
 			return authToken == *authTokenFlag
 		}, func() string {
-			return uuid.New()[0:8]
+			return uuid.NewV4().String()[0:8]
 		})))
 
 	log.Println("Listen at HTTPS ", *listenAddr)
