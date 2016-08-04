@@ -8,6 +8,7 @@
 package main
 
 import (
+	"flag"
 	"crypto/tls"
 	"net"
 	"os"
@@ -30,9 +31,12 @@ import (
 var (
 	clremoton       *clientRemoton
 	machinePassword string
+	insecure = flag.Bool("insecure", false, "skip verify tls")
 )
 
 func main() {
+	flag.Parse()
+	
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	common.SetDefaultGtkTheme()
 
@@ -140,7 +144,9 @@ func main() {
 			return
 		}
 		clremoton.SetCertPool(certPool)
-
+		if *insecure {
+			clremoton.SetInsecure()
+		}
 		if !clremoton.Started() {
 			log.Println("starting remoton")
 			machinePassword = uuid.New()[:4]

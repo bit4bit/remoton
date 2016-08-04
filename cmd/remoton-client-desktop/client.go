@@ -291,6 +291,10 @@ func (c *clientRemoton) SetCertPool(roots *x509.CertPool) {
 	c.client.TLSConfig.RootCAs = roots
 }
 
+func (c *clientRemoton) SetInsecure() {
+	c.client.TLSConfig.InsecureSkipVerify = true
+}
+
 func (c *clientRemoton) Start(srvAddr string, authToken, password string) error {
 	var err error
 	c.session, err = c.client.NewSession("https://"+srvAddr, authToken)
