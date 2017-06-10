@@ -2,8 +2,13 @@
 
 **DEV STAGE**
 
-(Go) Own remote desktop multi-platform
+(Go) Own secure remote desktop multi-platform, own platform for sharing your desktop with software libre
 
+  * do support
+  * get desktop access to remote user
+  * upload/download files
+  * chat
+  
 **Remoton desktop** it's proof concept of **Remoton Library**
 
 Commands
