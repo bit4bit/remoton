@@ -27,7 +27,11 @@ What ever you like
 
 ## Release
 
-See [Releases](https://github.com/bit4bit/remoton/releases/)
+See [Releases](https://github.com/bit4bit/remoton-release/releases)
+
+## Install from release
+
+Please check at [Releases](https://github.com/bit4bit/remoton-release/releases)
 
 ## Install from source
 
