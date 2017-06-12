@@ -26,7 +26,7 @@ func (c Session) String() string {
 
 var (
 	srv        = flag.String("srv", "localhost:9934", "server address")
-	service    = flag.String("service", "chat", "service chat")
+	service    = flag.String("service", "vpn", "service chat")
 	tunnelAddr = flag.String("tunnel", "localhost:5900", "tunnel address")
 	authToken  = flag.String("auth", "", "auth token")
 	srvPrefix  = flag.String("srv-prefix", "/remoton", "base app default remoton")
@@ -48,7 +48,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Session -> %s:%s", session.ID, session.AuthToken)
+	log.Printf("Session -> %s", session.ID)
 	defer session.Destroy()
 
 	if *chat {

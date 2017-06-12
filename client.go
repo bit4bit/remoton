@@ -39,7 +39,7 @@ type SessionClient struct {
 	*Client
 
 	ID        string
-	authToken string
+	AuthToken string
 
 	//WSURL web socket url by default it try
 	//to guess from baseUrl
@@ -128,7 +128,7 @@ func (c *Client) NewSession(_url string, authToken string) (*SessionClient, erro
 //Destroy the current session this not close active connections
 func (c *SessionClient) Destroy() {
 	req, _ := http.NewRequest("DELETE", c.APIURL+"/session/"+c.ID, nil)
-	req.Header.Set("X-Auth-Session", c.authToken)
+	req.Header.Set("X-Auth-Session", c.AuthToken)
 	c.hclient.Do(req)
 }
 
@@ -163,7 +163,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 	}
 	burl.Path += fmt.Sprintf("%s/session/%s/conn/%s%s/tcp", c.Prefix, c.ID, service, action)
 	req, err := http.NewRequest("GET", burl.String(), nil)
-	req.Header.Set("X-Auth-Session", c.authToken)
+	req.Header.Set("X-Auth-Session", c.AuthToken)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (c *SessionClient) dialTCP(service string, action string) (net.Conn, error)
 	bw.WriteString("Host: " + burl.Host + "\r\n")
 	bw.WriteString("Connection: Upgrade\r\n")
 	header := http.Header{}
-	header.Set("X-Auth-Session", c.authToken)
+	header.Set("X-Auth-Session", c.AuthToken)
 	err = header.Write(bw)
 	if err != nil {
 		return nil, err

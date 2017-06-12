@@ -8,8 +8,8 @@
 package main
 
 import (
-	"flag"
 	"crypto/tls"
+	"flag"
 	"net"
 	"os"
 	"os/signal"
@@ -18,7 +18,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/bit4bit/remoton"
 	"github.com/bit4bit/remoton/common"
 
@@ -31,16 +30,16 @@ import (
 var (
 	clremoton       *clientRemoton
 	machinePassword string
-	insecure = flag.Bool("insecure", false, "skip verify tls")
+	insecure        = flag.Bool("insecure", false, "skip verify tls")
 )
 
 func main() {
 	flag.Parse()
-	
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	common.SetDefaultGtkTheme()
 
-	machinePassword = uuid.New()[:4]
+	machinePassword = remoton.GenerateAuthUser()
 	clremoton = newClient(&remoton.Client{Prefix: "/remoton", TLSConfig: &tls.Config{}})
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGABRT, syscall.SIGKILL, syscall.SIGTERM)
@@ -151,7 +150,7 @@ func main() {
 
 		if !clremoton.Started() {
 			log.Println("starting remoton")
-			machinePassword = uuid.New()[:4]
+			machinePassword = remoton.GenerateAuthUser()
 			err := clremoton.Start(serverEntry.GetText(), authServerEntry.GetText(),
 				machinePassword)
 

@@ -9,10 +9,8 @@ import (
 	"runtime/pprof"
 	"strconv"
 
-	"github.com/bit4bit/remoton"
-	"github.com/satori/go.uuid"
-	
 	log "github.com/Sirupsen/logrus"
+	"github.com/bit4bit/remoton"
 
 	"gopkg.in/throttled/throttled.v2"
 	"gopkg.in/throttled/throttled.v2/store"
@@ -58,7 +56,7 @@ func main() {
 		remoton.NewServer(func(authToken string, r *http.Request) bool {
 			return authToken == *authTokenFlag
 		}, func() string {
-			return uuid.NewV4().String()[0:8]
+			return remoton.GenerateAuthUser()
 		})))
 
 	log.Println("Listen at HTTPS ", *listenAddr)

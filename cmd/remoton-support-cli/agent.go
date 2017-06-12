@@ -49,14 +49,14 @@ func main() {
 		go chatStd(wsconnChat)
 	}
 
-	log.Println("connected vnc")
+	log.Println("connected clien")
 	listen, err := net.Listen("tcp", *tunnelAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for {
-		log.Println("waiting client vnc")
+		log.Println("waiting client")
 		conn, err := listen.Accept()
 		if err != nil {
 			log.Error(err)
