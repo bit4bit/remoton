@@ -38,6 +38,10 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	if os.Getenv("REMOTON_SERVER_AUTH_TOKEN") != "" {
+		*authTokenFlag = os.Getenv("REMOTON_SERVER_AUTH_TOKEN")
+	}
+
 	if *authTokenFlag == "" {
 		*authTokenFlag = "public"
 		log.Println("Using default Token", *authTokenFlag)
