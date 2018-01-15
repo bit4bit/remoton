@@ -12,8 +12,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/bit4bit/remoton"
 
-	"gopkg.in/throttled/throttled.v2"
-	"gopkg.in/throttled/throttled.v2/store"
+	"github.com/throttled/throttled"
+	"github.com/throttled/throttled/store"
 )
 
 var (
